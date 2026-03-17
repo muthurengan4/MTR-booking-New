@@ -41,15 +41,18 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-navigation transition-organic">
-      {/* Decorative stripe matching logo colors - forest green to earth brown to tiger orange gradient */}
-      <div className="h-2 w-full bg-gradient-to-r from-[#2D5016] via-[#4A7C2E] via-50% via-[#8B4513] to-[#FF6B35]" />
-      
-      <div className="bg-card shadow-md">
-        <div className="max-w-screen-2xl mx-auto">
-          <div className="flex items-center justify-between h-20 px-6">
+      {/* Full header with gradient stripe background */}
+      <div className="relative">
+        {/* Gradient stripe spanning full header */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#2D5016] via-[#4A7C2E] via-40% via-[#8B4513] via-70% to-[#FF6B35]" />
+        
+        {/* Main header content with subtle gradient overlay */}
+        <div className="bg-gradient-to-r from-[#2D5016]/5 via-[#8B4513]/5 to-[#FF6B35]/5 shadow-md border-b-4 border-gradient" style={{borderImage: 'linear-gradient(to right, #2D5016, #4A7C2E, #8B4513, #FF6B35) 1'}}>
+          <div className="max-w-screen-2xl mx-auto">
+            <div className="flex items-center justify-between h-20 px-6">
           <div className="flex items-center gap-8">
             <Link to="/home-landing" className="flex items-center gap-3 transition-organic hover-lift">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden transition-organic">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden transition-organic bg-white/80 shadow-sm">
                 <Image 
                   src="/assets/images/MTR-1769601441831.png" 
                   alt="Mudumalai Tiger Reserve Logo" 
@@ -57,8 +60,8 @@ const Header = () => {
                 />
               </div>
               <div className="flex flex-col">
-                <span className="font-heading font-bold text-xl text-foreground">Mudumalai Tiger Reserve</span>
-                <span className="text-caption text-muted-foreground text-xs">Where Wildlife Thrives</span>
+                <span className="font-heading font-bold text-xl text-[#2D5016]">Mudumalai Tiger Reserve</span>
+                <span className="text-caption text-[#8B4513] text-xs font-medium">Where Wildlife Thrives</span>
               </div>
             </Link>
 
@@ -69,8 +72,8 @@ const Header = () => {
                   to={item?.path}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-organic hover-lift ${
                     isActivePath(item?.path)
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-foreground hover:bg-muted'
+                      ? 'bg-gradient-to-r from-[#2D5016] to-[#4A7C2E] text-white shadow-sm'
+                      : 'text-[#2D5016] hover:bg-[#2D5016]/10'
                   }`}
                 >
                   <Icon name={item?.icon} size={20} strokeWidth={2} />
@@ -83,12 +86,12 @@ const Header = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={handleCartClick}
-              className="relative p-3 rounded-lg transition-organic hover:bg-muted hover-lift active-press"
+              className="relative p-3 rounded-lg transition-organic hover:bg-[#2D5016]/10 hover-lift active-press text-[#2D5016]"
               aria-label="Shopping cart"
             >
               <Icon name="ShoppingCart" size={24} strokeWidth={2} />
               {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full flex items-center justify-center text-xs font-bold">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF6B35] text-white rounded-full flex items-center justify-center text-xs font-bold">
                   {cartItemCount}
                 </span>
               )}
@@ -97,7 +100,7 @@ const Header = () => {
             <div className="relative">
               <button
                 onClick={toggleAccountMenu}
-                className="flex items-center gap-2 p-3 rounded-lg transition-organic hover:bg-muted hover-lift active-press"
+                className="flex items-center gap-2 p-3 rounded-lg transition-organic hover:bg-[#2D5016]/10 hover-lift active-press text-[#2D5016]"
                 aria-label="User account"
               >
                 <Icon name={isAuthenticated ? 'User' : 'UserCircle'} size={24} strokeWidth={2} />
@@ -158,12 +161,13 @@ const Header = () => {
 
             <button
               onClick={toggleMobileMenu}
-              className="lg:hidden p-3 rounded-lg transition-organic hover:bg-muted active-press"
+              className="lg:hidden p-3 rounded-lg transition-organic hover:bg-[#2D5016]/10 active-press text-[#2D5016]"
               aria-label="Toggle mobile menu"
             >
               <Icon name={mobileMenuOpen ? 'X' : 'Menu'} size={24} strokeWidth={2} />
             </button>
           </div>
+        </div>
         </div>
         </div>
       </div>
@@ -173,7 +177,7 @@ const Header = () => {
             className="fixed inset-0 bg-background z-40 lg:hidden"
             onClick={toggleMobileMenu}
           />
-          <div className="fixed top-[86px] left-0 right-0 bottom-0 bg-card z-dropdown lg:hidden overflow-y-auto">
+          <div className="fixed top-[88px] left-0 right-0 bottom-0 bg-card z-dropdown lg:hidden overflow-y-auto border-t-4" style={{borderImage: 'linear-gradient(to right, #2D5016, #4A7C2E, #8B4513, #FF6B35) 1'}}>
             <nav className="p-6 space-y-2">
               {navigationItems?.map((item) => (
                 <Link
@@ -182,8 +186,8 @@ const Header = () => {
                   onClick={toggleMobileMenu}
                   className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-organic ${
                     isActivePath(item?.path)
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-foreground hover:bg-muted'
+                      ? 'bg-gradient-to-r from-[#2D5016] to-[#4A7C2E] text-white shadow-sm'
+                      : 'text-[#2D5016] hover:bg-[#2D5016]/10'
                   }`}
                 >
                   <Icon name={item?.icon} size={24} strokeWidth={2} />
