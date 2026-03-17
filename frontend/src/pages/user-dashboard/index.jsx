@@ -304,7 +304,7 @@ const UserDashboard = () => {
       <div className="min-h-screen bg-background">
         <Header />
 
-        <main className="pt-20">
+        <main className="pt-[88px]">
           <div className="bg-gradient-to-br from-primary/5 via-accent/5 to-success/5 border-b border-border py-8 md:py-12">
             <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">

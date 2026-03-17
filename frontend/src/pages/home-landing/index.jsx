@@ -38,7 +38,7 @@ const HomeLanding = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="pt-20">
+      <main className="pt-[86px]">
         <HeroSection 
           onLocationClick={handleLocationClick}
           onBookNowClick={handleBookNowClick}

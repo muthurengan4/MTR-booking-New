@@ -202,7 +202,7 @@ const ActivityBooking = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <BookingProgress currentStep={3} steps={bookingSteps} onStepClick={(stepId) => console.log('Step clicked:', stepId)} />
-      <main className="pt-20">
+      <main className="pt-[88px]">
         <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
           <div className="mb-8 md:mb-10 lg:mb-12">
             <div className="flex items-center gap-3 mb-4">

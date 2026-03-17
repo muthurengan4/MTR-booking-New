@@ -40,9 +40,13 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-card shadow-md z-navigation transition-organic">
-      <div className="max-w-screen-2xl mx-auto">
-        <div className="flex items-center justify-between h-20 px-6">
+    <header className="fixed top-0 left-0 right-0 z-navigation transition-organic">
+      {/* Decorative stripe matching logo colors - forest green to earth brown to tiger orange gradient */}
+      <div className="h-2 w-full bg-gradient-to-r from-[#2D5016] via-[#4A7C2E] via-50% via-[#8B4513] to-[#FF6B35]" />
+      
+      <div className="bg-card shadow-md">
+        <div className="max-w-screen-2xl mx-auto">
+          <div className="flex items-center justify-between h-20 px-6">
           <div className="flex items-center gap-8">
             <Link to="/home-landing" className="flex items-center gap-3 transition-organic hover-lift">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden transition-organic">
@@ -161,6 +165,7 @@ const Header = () => {
             </button>
           </div>
         </div>
+        </div>
       </div>
       {mobileMenuOpen && (
         <>
@@ -168,7 +173,7 @@ const Header = () => {
             className="fixed inset-0 bg-background z-40 lg:hidden"
             onClick={toggleMobileMenu}
           />
-          <div className="fixed top-20 left-0 right-0 bottom-0 bg-card z-dropdown lg:hidden overflow-y-auto">
+          <div className="fixed top-[86px] left-0 right-0 bottom-0 bg-card z-dropdown lg:hidden overflow-y-auto">
             <nav className="p-6 space-y-2">
               {navigationItems?.map((item) => (
                 <Link

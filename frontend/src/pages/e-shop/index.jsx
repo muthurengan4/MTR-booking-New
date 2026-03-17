@@ -395,7 +395,7 @@ const EShop = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-20">
+      <main className="pt-[88px]">
         <div className="bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 py-12 md:py-16 lg:py-20">
           <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-3xl">

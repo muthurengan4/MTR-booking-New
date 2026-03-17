@@ -92,7 +92,7 @@ const SafariRouteExplorer = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="pt-20 flex items-center justify-center py-12">
+        <div className="pt-[88px] flex items-center justify-center py-12">
           <Icon name="Loader2" size={48} className="animate-spin" color="var(--color-primary)" />
         </div>
       </div>
@@ -103,7 +103,7 @@ const SafariRouteExplorer = () => {
     <div className="min-h-screen bg-background" data-testid="safari-route-explorer">
       <Header />
       
-      <main className="pt-20">
+      <main className="pt-[88px]">
         <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
           <div className="mb-6 md:mb-8">
             <div className="flex items-center gap-3 mb-3">

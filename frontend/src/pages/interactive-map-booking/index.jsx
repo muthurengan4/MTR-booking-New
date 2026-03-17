@@ -190,7 +190,7 @@ const InteractiveMapBooking = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className="pt-20">
+      <div className="pt-[88px]">
         <BookingProgress currentStep={1} onStepClick={() => {}} />
       </div>
       <main className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
