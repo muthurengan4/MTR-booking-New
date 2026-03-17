@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/navigation/Header';
+import HeroCarousel from './components/HeroCarousel';
 import HeroSection from './components/HeroSection';
 import ServicesOverview from './components/ServicesOverview';
 import FeaturedActivities from './components/FeaturedActivities';
@@ -38,7 +39,11 @@ const HomeLanding = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="pt-[86px]">
+      <main className="pt-[88px]">
+        {/* Hero Carousel Section */}
+        <HeroCarousel />
+        
+        {/* Map Section with smooth blend */}
         <HeroSection 
           onLocationClick={handleLocationClick}
           onBookNowClick={handleBookNowClick}

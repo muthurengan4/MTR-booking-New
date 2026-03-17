@@ -45,10 +45,13 @@ const HeroSection = ({ onLocationClick, onBookNowClick }) => {
   };
 
   return (
-    <section className="relative bg-gradient-to-b from-primary/5 to-background py-8 md:py-12 lg:py-16">
-      <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
+    <section className="relative bg-background py-8 md:py-12 lg:py-16 -mt-16">
+      {/* Top gradient blend with carousel */}
+      <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-background via-background/80 to-transparent" />
+      
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-6 md:mb-8 lg:mb-12">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-foreground mb-3 md:mb-4">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-[#2D5016] mb-3 md:mb-4">
             Discover Wildlife Paradise
           </h1>
           <p className="text-base md:text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto">
