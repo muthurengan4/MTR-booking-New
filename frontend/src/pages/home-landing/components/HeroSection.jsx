@@ -1,6 +1,6 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
-import InteractiveMap from './InteractiveMap';
+import RealMudumalaiMap from './RealMudumalaiMap';
 
 const HeroSection = ({ onLocationClick, onBookNowClick }) => {
   const handleLocationSelect = (location) => {
@@ -33,7 +33,7 @@ const HeroSection = ({ onLocationClick, onBookNowClick }) => {
           </h2>
           
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
-            Explore our interactive map to find the perfect accommodation across five stunning regions of the Mudumalai Tiger Reserve
+            Explore the real Mudumalai Tiger Reserve map to find authentic forest rest houses and accommodations
           </p>
 
           {/* Quick Stats */}
@@ -52,24 +52,24 @@ const HeroSection = ({ onLocationClick, onBookNowClick }) => {
                 <Icon name="Home" size={20} className="text-[#8B4513]" />
               </div>
               <div className="text-left">
-                <p className="text-xl font-bold text-[#8B4513]">18+</p>
-                <p className="text-xs text-muted-foreground">Accommodations</p>
+                <p className="text-xl font-bold text-[#8B4513]">25+</p>
+                <p className="text-xs text-muted-foreground">Rest Houses</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-full bg-[#FF6B35]/10 flex items-center justify-center">
-                <Icon name="Sparkles" size={20} className="text-[#FF6B35]" />
+                <Icon name="Navigation" size={20} className="text-[#FF6B35]" />
               </div>
               <div className="text-left">
-                <p className="text-xl font-bold text-[#FF6B35]">100%</p>
-                <p className="text-xs text-muted-foreground">In Nature</p>
+                <p className="text-xl font-bold text-[#FF6B35]">Real</p>
+                <p className="text-xs text-muted-foreground">GPS Locations</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Interactive Map Section */}
-        <InteractiveMap 
+        {/* Real Interactive Map Section */}
+        <RealMudumalaiMap 
           onLocationSelect={handleLocationSelect}
           onBookNow={handleBookNow}
         />
