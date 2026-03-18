@@ -164,13 +164,13 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
     <div className="grid lg:grid-cols-5 gap-6">
       {/* Region Filter Sidebar */}
       <div className="lg:col-span-1 space-y-3">
-        <h4 className="font-heading font-semibold text-[#2D5016] mb-4">Filter by Region</h4>
+        <h4 className="font-heading font-semibold text-[#4A7C2E] mb-4">Filter by Region</h4>
         <button
           onClick={() => setActiveRegion('all')}
           className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${
             activeRegion === 'all' 
-              ? 'bg-gradient-to-r from-[#2D5016] to-[#4A7C2E] text-white shadow-lg' 
-              : 'bg-white hover:bg-[#2D5016]/10 text-[#2D5016] border border-[#2D5016]/20'
+              ? 'bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white shadow-lg shadow-[#4A7C2E]/30' 
+              : 'bg-[#152415] hover:bg-[#1E2E1E] text-[#9CA38B] border border-[#4A7C2E]/20'
           }`}
         >
           <Icon name="Globe" size={18} />
@@ -185,11 +185,12 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
             className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${
               activeRegion === key 
                 ? 'text-white shadow-lg' 
-                : 'bg-white hover:bg-opacity-20 border border-opacity-20'
+                : 'bg-[#152415] hover:bg-[#1E2E1E] border'
             }`}
             style={{
-              backgroundColor: activeRegion === key ? region.color : 'white',
-              borderColor: region.color
+              backgroundColor: activeRegion === key ? region.color : undefined,
+              borderColor: activeRegion === key ? region.color : 'rgba(74, 124, 46, 0.2)',
+              boxShadow: activeRegion === key ? `0 10px 25px ${region.color}40` : undefined
             }}
           >
             <div 
@@ -199,23 +200,23 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
             <span className="font-medium" style={{ color: activeRegion === key ? 'white' : region.color }}>
               {region.name}
             </span>
-            <span className="ml-auto text-sm opacity-75" style={{ color: activeRegion === key ? 'white' : region.color }}>
+            <span className="ml-auto text-sm opacity-75" style={{ color: activeRegion === key ? 'white' : '#9CA38B' }}>
               {locations.filter(l => l.region === key).length}
             </span>
           </button>
         ))}
 
         {/* Map Legend */}
-        <div className="mt-6 p-4 bg-white rounded-xl border border-[#2D5016]/20">
-          <p className="text-xs font-semibold text-[#2D5016] mb-3">Accommodation Types</p>
+        <div className="mt-6 p-4 bg-[#152415] rounded-xl border border-[#4A7C2E]/20">
+          <p className="text-xs font-semibold text-[#4A7C2E] mb-3">Accommodation Types</p>
           <div className="space-y-2 text-xs">
             {[
-              { type: 'suite', label: 'Luxury Suite', color: '#2D5016' },
-              { type: 'cottage', label: 'Forest Cottage', color: '#4A7C2E' },
-              { type: 'log-house', label: 'Log House', color: '#8B4513' },
-              { type: 'dormitory', label: 'Dormitory', color: '#FF6B35' },
-              { type: 'room', label: 'Rest House', color: '#D97706' },
-              { type: 'shed', label: 'Trekking Shed', color: '#6B7280' }
+              { type: 'suite', label: 'Luxury Suite', color: '#4A7C2E' },
+              { type: 'cottage', label: 'Forest Cottage', color: '#5A8C3E' },
+              { type: 'log-house', label: 'Log House', color: '#A0522D' },
+              { type: 'dormitory', label: 'Dormitory', color: '#FF8C5A' },
+              { type: 'room', label: 'Rest House', color: '#F0AD4E' },
+              { type: 'shed', label: 'Trekking Shed', color: '#9CA38B' }
             ].map(item => (
               <div key={item.type} className="flex items-center gap-2">
                 <div 
@@ -233,7 +234,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
 
       {/* Real Interactive Map */}
       <div className="lg:col-span-3">
-        <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border-2 border-[#2D5016]/20 shadow-xl">
+        <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border-2 border-[#4A7C2E]/30 shadow-2xl shadow-black/30">
           <MapContainer
             center={mapCenter}
             zoom={11}
@@ -245,12 +246,6 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            
-            {/* Satellite/Terrain layer option */}
-            {/* <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              attribution='Tiles &copy; Esri'
-            /> */}
 
             <ZoomControl position="topright" />
             
@@ -260,7 +255,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
               <Marker
                 key={location.id}
                 position={[location.coords.lat, location.coords.lng]}
-                icon={createCustomIcon(regions[location.region]?.color || '#2D5016', location.type)}
+                icon={createCustomIcon(regions[location.region]?.color || '#4A7C2E', location.type)}
                 eventHandlers={{
                   click: () => handleMarkerClick(location)
                 }}
@@ -273,11 +268,11 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
                       className="w-full h-24 object-cover rounded-t-lg -mt-3 -mx-3 mb-2"
                       style={{ width: 'calc(100% + 24px)' }}
                     />
-                    <h4 className="font-bold text-[#2D5016] text-sm">{location.name}</h4>
-                    <p className="text-xs text-gray-600 mb-2">{location.description}</p>
+                    <h4 className="font-bold text-[#4A7C2E] text-sm">{location.name}</h4>
+                    <p className="text-xs text-[#9CA38B] mb-2">{location.description}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">{getTypeLabel(location.type)}</span>
-                      <span className="font-bold text-[#FF6B35]">₹{location.price.toLocaleString()}</span>
+                      <span className="text-xs text-[#9CA38B]">{getTypeLabel(location.type)}</span>
+                      <span className="font-bold text-[#FF8C5A]">₹{location.price.toLocaleString()}</span>
                     </div>
                   </div>
                 </Popup>
@@ -286,13 +281,13 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
           </MapContainer>
 
           {/* Map Title Overlay */}
-          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg z-[1000]">
-            <h4 className="font-heading font-bold text-[#2D5016] text-sm">Mudumalai Tiger Reserve</h4>
-            <p className="text-xs text-muted-foreground">Interactive Accommodation Map</p>
+          <div className="absolute top-4 left-4 bg-[#152415]/95 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg shadow-black/30 z-[1000] border border-[#4A7C2E]/30">
+            <h4 className="font-heading font-bold text-[#4A7C2E] text-sm">Mudumalai Tiger Reserve</h4>
+            <p className="text-xs text-[#9CA38B]">Interactive Accommodation Map</p>
           </div>
 
           {/* Location Count Badge */}
-          <div className="absolute bottom-4 left-4 bg-[#2D5016] text-white rounded-full px-4 py-2 shadow-lg z-[1000] flex items-center gap-2">
+          <div className="absolute bottom-4 left-4 bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white rounded-full px-4 py-2 shadow-lg shadow-[#4A7C2E]/30 z-[1000] flex items-center gap-2">
             <Icon name="MapPin" size={16} />
             <span className="text-sm font-medium">{filteredLocations.length} Locations</span>
           </div>
@@ -302,62 +297,62 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
       {/* Location Details Panel */}
       <div className="lg:col-span-1">
         {selectedLocation ? (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-[#2D5016]/20 sticky top-24">
+          <div className="bg-[#152415] rounded-2xl shadow-2xl shadow-black/30 overflow-hidden border border-[#4A7C2E]/30 sticky top-24">
             <div className="relative h-40">
               <img 
                 src={selectedLocation.image} 
                 alt={selectedLocation.name}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0D1A0D] via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 right-3">
                 <span 
-                  className="inline-block px-2 py-1 rounded-full text-white text-xs font-medium mb-1"
+                  className="inline-block px-2 py-1 rounded-full text-white text-xs font-medium mb-1 shadow-lg"
                   style={{ backgroundColor: regions[selectedLocation.region]?.color }}
                 >
                   {regions[selectedLocation.region]?.name}
                 </span>
-                <h4 className="font-heading font-bold text-white text-lg leading-tight">{selectedLocation.name}</h4>
+                <h4 className="font-heading font-bold text-white text-lg leading-tight drop-shadow-lg">{selectedLocation.name}</h4>
               </div>
             </div>
             
             <div className="p-4 space-y-4">
-              <p className="text-sm text-muted-foreground">{selectedLocation.description}</p>
+              <p className="text-sm text-[#9CA38B]">{selectedLocation.description}</p>
               
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{getTypeLabel(selectedLocation.type)}</span>
+                <span className="text-sm text-[#9CA38B]">{getTypeLabel(selectedLocation.type)}</span>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-[#2D5016]">₹{selectedLocation.price.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">per night</p>
+                  <p className="text-2xl font-bold text-[#4A7C2E]">₹{selectedLocation.price.toLocaleString()}</p>
+                  <p className="text-xs text-[#9CA38B]">per night</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Icon name="Users" size={16} />
+              <div className="flex items-center gap-2 text-sm text-[#9CA38B]">
+                <Icon name="Users" size={16} className="text-[#4A7C2E]" />
                 <span>Max {selectedLocation.capacity} guests</span>
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-[#2D5016] mb-2">Amenities</p>
+                <p className="text-xs font-semibold text-[#4A7C2E] mb-2">Amenities</p>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedLocation.amenities.map((amenity, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-[#2D5016]/10 text-[#2D5016] text-xs rounded-full">
+                    <span key={idx} className="px-2 py-1 bg-[#4A7C2E]/20 text-[#4A7C2E] text-xs rounded-full border border-[#4A7C2E]/30">
                       {amenity}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#2D5016]/10">
-                <p className="text-xs text-muted-foreground mb-1">GPS Coordinates</p>
-                <p className="text-xs font-mono text-[#2D5016]">
+              <div className="pt-2 border-t border-[#4A7C2E]/20">
+                <p className="text-xs text-[#9CA38B] mb-1">GPS Coordinates</p>
+                <p className="text-xs font-mono text-[#4A7C2E]">
                   {selectedLocation.coords.lat.toFixed(5)}°N, {selectedLocation.coords.lng.toFixed(5)}°E
                 </p>
               </div>
 
               <Button 
                 onClick={handleBookNow}
-                className="w-full bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] hover:from-[#FF8C5A] hover:to-[#FF6B35]"
+                className="w-full bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF8C5A] shadow-lg shadow-[#FF8C5A]/30"
                 data-testid="book-location-btn"
               >
                 <Icon name="Calendar" size={18} />
@@ -368,7 +363,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
                 href={`https://www.google.com/maps?q=${selectedLocation.coords.lat},${selectedLocation.coords.lng}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 text-sm text-[#2D5016] hover:text-[#4A7C2E] transition-colors"
+                className="flex items-center justify-center gap-2 text-sm text-[#4A7C2E] hover:text-[#5A8C3E] transition-colors"
               >
                 <Icon name="ExternalLink" size={14} />
                 View on Google Maps
@@ -376,12 +371,12 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
             </div>
           </div>
         ) : (
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center border border-[#2D5016]/20">
-            <div className="w-16 h-16 mx-auto mb-4 bg-[#2D5016]/10 rounded-full flex items-center justify-center">
-              <Icon name="MousePointer" size={28} className="text-[#2D5016]" />
+          <div className="bg-[#152415]/80 backdrop-blur-sm rounded-2xl p-6 text-center border border-[#4A7C2E]/20">
+            <div className="w-16 h-16 mx-auto mb-4 bg-[#4A7C2E]/20 rounded-full flex items-center justify-center">
+              <Icon name="MousePointer" size={28} className="text-[#4A7C2E]" />
             </div>
-            <h4 className="font-heading font-semibold text-[#2D5016] mb-2">Select a Location</h4>
-            <p className="text-sm text-muted-foreground">
+            <h4 className="font-heading font-semibold text-[#4A7C2E] mb-2">Select a Location</h4>
+            <p className="text-sm text-[#9CA38B]">
               Click on any marker on the map to view accommodation details and book your stay
             </p>
           </div>

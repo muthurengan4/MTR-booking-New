@@ -162,12 +162,12 @@ const HeroCarousel = () => {
       </div>
 
       {/* Bottom gradient fade for smooth transition to content */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-10" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0D1A0D] to-transparent z-10" />
       
       {/* Decorative bottom border matching header */}
       <div 
         className="absolute bottom-0 left-0 right-0 h-1 z-20"
-        style={{ background: 'linear-gradient(to right, #2D5016, #4A7C2E, #8B4513, #FF6B35)' }}
+        style={{ background: 'linear-gradient(to right, #2D5016, #4A7C2E, #8B4513, #FF8C5A)' }}
       />
     </section>
   );
