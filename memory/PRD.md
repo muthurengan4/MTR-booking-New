@@ -31,6 +31,18 @@ Compile and build the existing codebase and change the tech stack from React + S
 
 ## What's Been Implemented
 
+### March 18, 2026 - Unified Multi-Step Booking Flow (COMPLETED)
+- ✅ **Cart Persistence Fix**: Rewrote CartContext.jsx with localStorage persistence
+- ✅ **Add to Cart from Map**: Click marker → View details → Add accommodation to cart
+- ✅ **Add to Cart from Safari**: Select date/participants → Add safari to cart
+- ✅ **Add Souvenirs**: Button navigates to e-shop to add products
+- ✅ **E-shop Add to Cart**: Product cards with Add to Cart functionality
+- ✅ **FloatingCartIndicator**: Shows cart count, expands to summary, hides on cart page
+- ✅ **Header Cart Badge**: Shows correct item count across all pages
+- ✅ **Full Checkout Flow**: Review Cart → Guest Details → Payment → Confirmation
+- ✅ **Guest Account Creation**: Auto-creates account with generated password
+- ✅ **100% Test Pass Rate** - All 10 features verified by testing agent
+
 ### March 18, 2026 - Shopping Cart & Guest Checkout
 - ✅ Complete shopping cart redesign with dark theme
 - ✅ Backend APIs: User registration, login, cart CRUD, checkout
@@ -154,24 +166,24 @@ Compile and build the existing codebase and change the tech stack from React + S
 
 ## Prioritized Backlog
 
-### P0 (Critical)
+### P0 (Critical) - ALL COMPLETED ✅
 - ✅ Booking widget integration into homepage (COMPLETED)
 - ✅ Remove old booking page (COMPLETED)
 - ✅ Real-time availability checking with visual map indicators (COMPLETED)
+- ✅ Unified multi-step booking flow (COMPLETED)
+- ✅ Cart persistence across page navigation (COMPLETED)
 
 ### P1 (High Priority)
-- [ ] Complete booking flow - link map selections to booking confirmation
+- [ ] Safari booking date validation - prevent past dates or unavailable dates
 - [ ] Add pagination to all list endpoints
 - [ ] Implement booking date blocking functionality (admin feature)
-- [ ] Add email/SMS notification integration
-- [ ] User registration and public booking flow
+- [ ] Add email/SMS notification integration (Resend/SendGrid)
 
 ### P2 (Medium Priority)
-- [ ] Connect admin dashboard components to live backend (currently using mock data)
-- [ ] E-shop product management
-- [ ] Shopping cart functionality
-- [ ] User dashboard for booking history
-- [ ] Payment gateway integration (Stripe/Razorpay)
+- [ ] Connect admin dashboard components to live backend (currently using mock data in /app/frontend/src/pages/admin-dashboard/components/)
+- [ ] E-shop product management in admin
+- [ ] Payment gateway integration (Stripe/Razorpay) - currently demo mode
+- [ ] User profile management page
 
 ### P3 (Future)
 - [ ] Mobile app version
@@ -186,7 +198,7 @@ Compile and build the existing codebase and change the tech stack from React + S
 4. **Pagination**: Not implemented on all endpoints (performance optimization needed)
 
 ## Next Tasks
-1. Connect booking widget to backend availability check API
-2. Complete booking confirmation flow after user selects accommodation
-3. Connect admin dashboard components to live backend APIs
-4. Add email notification system using Resend/SendGrid
+1. Safari booking date validation (prevent past dates)
+2. Connect admin dashboard components to live backend APIs
+3. Add email notification system using Resend/SendGrid for booking confirmations
+4. Add pagination to list endpoints for better performance
