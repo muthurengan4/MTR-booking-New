@@ -1,335 +1,622 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/navigation/Header';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-import AccommodationItem from './components/AccommodationItem';
-import ActivityItem from './components/ActivityItem';
-import ProductItem from './components/ProductItem';
-import OrderSummary from './components/OrderSummary';
-import GuestInfoForm from './components/GuestInfoForm';
-import EmptyCart from './components/EmptyCart';
+import { useCart } from '../../contexts/CartContext';
+import { useUserAuth } from '../../contexts/UserAuthContext';
+import api from '../../lib/api';
+
+// Simple toast notification
+const showToast = (message, type = 'success') => {
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all transform ${
+    type === 'success' ? 'bg-green-600 text-white' : type === 'error' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+};
 
 const ShoppingCart = () => {
   const navigate = useNavigate();
+  const { cartItems, removeFromCart, updateQuantity, clearCart, getCartTotal, sessionId, loading: cartLoading } = useCart();
+  const { user, isAuthenticated } = useUserAuth();
+  
+  const [checkoutStep, setCheckoutStep] = useState('cart'); // cart, details, payment, confirmation
+  const [guestInfo, setGuestInfo] = useState({
+    fullName: user?.full_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    alternatePhone: '',
+    createAccount: true
+  });
+  const [processing, setProcessing] = useState(false);
+  const [orderResult, setOrderResult] = useState(null);
+  const [errors, setErrors] = useState({});
 
-  const [accommodations, setAccommodations] = useState([
-  {
-    id: 'acc-1',
-    location: 'Masinagudi',
-    roomType: 'Deluxe Forest View Room',
-    description: 'Spacious room with panoramic forest views, king-size bed, and modern amenities',
-    image: "https://images.unsplash.com/photo-1582743560990-400cadc4a544",
-    imageAlt: 'Luxurious hotel room with large windows overlooking dense green forest, featuring king-size bed with white linens and wooden furniture',
-    checkIn: '2026-02-15',
-    checkOut: '2026-02-17',
-    guests: 2,
-    totalPrice: 8500
-  },
-  {
-    id: 'acc-2',
-    location: 'Thepakadu',
-    roomType: 'Family Suite',
-    description: 'Two-bedroom suite perfect for families, with separate living area and wildlife viewing deck',
-    image: "https://img.rocket.new/generatedImages/rocket_gen_img_170c40371-1768984977325.png",
-    imageAlt: 'Spacious family suite with two separate bedrooms, comfortable seating area, and large balcony with forest views',
-    checkIn: '2026-02-15',
-    checkOut: '2026-02-18',
-    guests: 4,
-    totalPrice: 15600
-  }]
-  );
+  useEffect(() => {
+    if (user) {
+      setGuestInfo(prev => ({
+        ...prev,
+        fullName: user.full_name || prev.fullName,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone
+      }));
+    }
+  }, [user]);
 
-  const [activities, setActivities] = useState([
-  {
-    id: 'act-1',
-    activityName: 'Jeep Safari',
-    location: 'Masinagudi Zone',
-    icon: 'Truck',
-    date: '2026-02-16',
-    timeSlot: '06:00',
-    participants: 4,
-    specialRequirements: 'Child seat required for 5-year-old',
-    totalPrice: 2400
-  },
-  {
-    id: 'act-2',
-    activityName: 'Elephant Camp Visit',
-    location: 'Thepakadu Camp',
-    icon: 'Trees',
-    date: '2026-02-17',
-    timeSlot: '10:00',
-    participants: 4,
-    specialRequirements: null,
-    totalPrice: 800
-  }]
-  );
+  const subtotal = getCartTotal();
+  const gstRate = 12;
+  const gstAmount = subtotal * gstRate / 100;
+  const totalAmount = subtotal + gstAmount;
 
-  const [products, setProducts] = useState([
-  {
-    id: 'prod-1',
-    productName: 'MTR Wildlife T-Shirt',
-    description: 'Premium cotton t-shirt with tiger print design',
-    image: "https://images.unsplash.com/photo-1605760641624-e03a56160108",
-    imageAlt: 'White cotton t-shirt with artistic tiger face print design displayed on wooden hanger',
-    variant: 'Size: L, Color: Forest Green',
-    price: 599,
-    quantity: 2,
-    maxQuantity: 15
-  },
-  {
-    id: 'prod-2',
-    productName: 'Handcrafted Wooden Elephant',
-    description: 'Traditional wooden elephant sculpture, hand-carved by local artisans',
-    image: "https://img.rocket.new/generatedImages/rocket_gen_img_13e21a9ce-1765439097702.png",
-    imageAlt: 'Intricately carved wooden elephant sculpture with detailed trunk and tusks on display stand',
-    variant: 'Size: Medium (8 inches)',
-    price: 1299,
-    quantity: 1,
-    maxQuantity: 5
-  }]
-  );
-
-  const [showGuestForm, setShowGuestForm] = useState(false);
-
-  const calculateSummary = () => {
-    const accommodationTotal = accommodations?.reduce((sum, item) => sum + item?.totalPrice, 0);
-    const activityTotal = activities?.reduce((sum, item) => sum + item?.totalPrice, 0);
-    const productTotal = products?.reduce((sum, item) => sum + item?.price * item?.quantity, 0);
-    const subtotal = accommodationTotal + activityTotal + productTotal;
-
-    const packageSavings = accommodations?.length > 0 && activities?.length > 0 ? 500 : 0;
-    const discount = packageSavings;
-    const tax = Math.round((subtotal - discount) * 0.18);
-    const total = subtotal - discount + tax;
-
-    return {
-      accommodationCount: accommodations?.length,
-      activityCount: activities?.length,
-      productCount: products?.reduce((sum, item) => sum + item?.quantity, 0),
-      accommodationTotal,
-      activityTotal,
-      productTotal,
-      subtotal,
-      discount,
-      tax,
-      total,
-      packageSavings
-    };
+  const validateForm = () => {
+    const newErrors = {};
+    if (!guestInfo.fullName.trim()) newErrors.fullName = 'Full name is required';
+    if (!guestInfo.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(guestInfo.email)) newErrors.email = 'Invalid email format';
+    if (!guestInfo.phone.trim()) newErrors.phone = 'Phone number is required';
+    else if (!/^\d{10}$/.test(guestInfo.phone.replace(/\D/g, ''))) newErrors.phone = 'Invalid phone number';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleModifyAccommodation = (id) => {
-    navigate('/interactive-map-booking', { state: { modifyBooking: id } });
+  const handleCheckout = async () => {
+    if (!validateForm()) return;
+
+    setProcessing(true);
+    try {
+      const response = await api.post('/api/checkout', {
+        session_id: sessionId,
+        full_name: guestInfo.fullName,
+        email: guestInfo.email,
+        phone: guestInfo.phone,
+        alternate_phone: guestInfo.alternatePhone || null,
+        create_account: guestInfo.createAccount && !isAuthenticated,
+        payment_method: 'card',
+        items: cartItems.map(item => ({
+          item_type: item.item_type,
+          item_id: item.item_id,
+          item_name: item.item_name,
+          item_details: item.item_details || {},
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price
+        }))
+      });
+
+      if (response.data?.success) {
+        setOrderResult(response.data);
+        setCheckoutStep('confirmation');
+        await clearCart();
+        showToast('Booking confirmed successfully!');
+      } else {
+        showToast(response.data?.message || 'Checkout failed');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      showToast('Checkout failed. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  const handleRemoveAccommodation = (id) => {
-    setAccommodations((prev) => prev?.filter((item) => item?.id !== id));
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-IN', { 
+        day: 'numeric', month: 'short', year: 'numeric' 
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
-  const handleRescheduleActivity = (id) => {
-    navigate('/activity-booking', { state: { rescheduleBooking: id } });
-  };
-
-  const handleRemoveActivity = (id) => {
-    setActivities((prev) => prev?.filter((item) => item?.id !== id));
-  };
-
-  const handleProductQuantityChange = (id, newQuantity) => {
-    setProducts((prev) => prev?.map((item) =>
-    item?.id === id ? { ...item, quantity: newQuantity } : item
-    ));
-  };
-
-  const handleRemoveProduct = (id) => {
-    setProducts((prev) => prev?.filter((item) => item?.id !== id));
-  };
-
-  const handleApplyPromo = (code) => {
-    console.log('Promo code applied:', code);
-  };
-
-  const handleProceedCheckout = () => {
-    setShowGuestForm(true);
-    setTimeout(() => {
-      document.getElementById('guest-info-section')?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handleGuestInfoSubmit = (formData) => {
-    console.log('Guest information submitted:', formData);
-    alert('Redirecting to secure payment gateway...');
-  };
-
-  const summary = calculateSummary();
-  const hasItems = accommodations?.length > 0 || activities?.length > 0 || products?.length > 0;
-
-  if (!hasItems) {
+  // Cart Item Card Component
+  const CartItemCard = ({ item, index }) => {
+    const details = item.item_details || {};
+    
     return (
-      <>
-        <Header />
-        <div className="pt-[88px]">
-          <EmptyCart />
+      <div 
+        className="bg-[#152415] rounded-xl p-4 border border-[#4A7C2E]/30 flex flex-col md:flex-row gap-4"
+        data-testid={`cart-item-${index}`}
+      >
+        {/* Item Image */}
+        <div className="w-full md:w-32 h-24 rounded-lg overflow-hidden bg-[#0D1A0D] flex-shrink-0">
+          {details.image ? (
+            <img src={details.image} alt={item.item_name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Icon 
+                name={item.item_type === 'accommodation' ? 'Home' : item.item_type === 'activity' ? 'Compass' : 'ShoppingBag'} 
+                size={32} 
+                className="text-[#4A7C2E]/50" 
+              />
+            </div>
+          )}
         </div>
-      </>);
-
-  }
-
-  return (
-    <>
-      <Header />
-      <div className="pt-[88px] bg-background min-h-screen">
-        <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-          <div className="mb-6 md:mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <Icon name="ShoppingCart" size={32} color="var(--color-primary)" strokeWidth={2} />
-              <h1 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-                Shopping Cart
-              </h1>
+        
+        {/* Item Details */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-1 ${
+                item.item_type === 'accommodation' ? 'bg-[#4A7C2E]/20 text-[#4A7C2E]' :
+                item.item_type === 'activity' ? 'bg-[#FF8C5A]/20 text-[#FF8C5A]' :
+                'bg-[#A0522D]/20 text-[#A0522D]'
+              }`}>
+                {item.item_type === 'accommodation' ? 'Stay' : item.item_type === 'activity' ? 'Activity' : 'Product'}
+              </span>
+              <h3 className="font-heading font-semibold text-white text-lg">{item.item_name}</h3>
             </div>
-            <p className="text-base md:text-lg text-muted-foreground">
-              Review your bookings and items before proceeding to checkout
-            </p>
+            <button 
+              onClick={() => removeFromCart(item.id)}
+              className="p-2 text-red-400 hover:bg-red-400/20 rounded-lg transition-colors"
+              data-testid={`remove-item-${index}`}
+            >
+              <Icon name="Trash2" size={18} />
+            </button>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-            <div className="lg:col-span-2 space-y-6 md:space-y-8">
-              {accommodations?.length > 0 &&
-              <section>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Icon name="Home" size={20} color="var(--color-primary)" strokeWidth={2} />
-                    </div>
-                    <h2 className="font-heading text-xl md:text-2xl font-semibold text-foreground">
-                      Accommodation Bookings ({accommodations?.length})
-                    </h2>
-                  </div>
-                  <div className="space-y-4">
-                    {accommodations?.map((item) =>
-                  <AccommodationItem
-                    key={item?.id}
-                    item={item}
-                    onModify={handleModifyAccommodation}
-                    onRemove={handleRemoveAccommodation} />
-
-                  )}
-                  </div>
-                </section>
-              }
-
-              {activities?.length > 0 &&
-              <section>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                      <Icon name="Compass" size={20} color="var(--color-accent)" strokeWidth={2} />
-                    </div>
-                    <h2 className="font-heading text-xl md:text-2xl font-semibold text-foreground">
-                      Activity Bookings ({activities?.length})
-                    </h2>
-                  </div>
-                  <div className="space-y-4">
-                    {activities?.map((item) =>
-                  <ActivityItem
-                    key={item?.id}
-                    item={item}
-                    onReschedule={handleRescheduleActivity}
-                    onRemove={handleRemoveActivity} />
-
-                  )}
-                  </div>
-                </section>
-              }
-
-              {products?.length > 0 &&
-              <section>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
-                      <Icon name="ShoppingBag" size={20} color="var(--color-secondary)" strokeWidth={2} />
-                    </div>
-                    <h2 className="font-heading text-xl md:text-2xl font-semibold text-foreground">
-                      E-Shop Items ({products?.reduce((sum, item) => sum + item?.quantity, 0)})
-                    </h2>
-                  </div>
-                  <div className="space-y-4">
-                    {products?.map((item) =>
-                  <ProductItem
-                    key={item?.id}
-                    item={item}
-                    onQuantityChange={handleProductQuantityChange}
-                    onRemove={handleRemoveProduct} />
-
-                  )}
-                  </div>
-                </section>
-              }
-
-              {showGuestForm &&
-              <section id="guest-info-section">
-                  <GuestInfoForm onSubmit={handleGuestInfoSubmit} />
-                  <div className="mt-6 flex flex-col md:flex-row gap-4">
-                    <Button
-                    variant="outline"
-                    size="lg"
-                    fullWidth
-                    iconName="ArrowLeft"
-                    iconPosition="left"
-                    onClick={() => setShowGuestForm(false)}>
-
-                      Back to Cart
-                    </Button>
-                    <Button
-                    variant="default"
-                    size="lg"
-                    fullWidth
-                    iconName="CreditCard"
-                    iconPosition="right"
-                    onClick={handleGuestInfoSubmit}>
-
-                      Proceed to Payment
-                    </Button>
-                  </div>
-                </section>
-              }
-            </div>
-
-            <div className="lg:col-span-1">
-              <OrderSummary
-                summary={summary}
-                onApplyPromo={handleApplyPromo}
-                onProceedCheckout={handleProceedCheckout} />
-
-            </div>
+          
+          {/* Item Meta */}
+          <div className="flex flex-wrap gap-3 text-sm text-[#9CA38B] mb-3">
+            {(details.checkIn || details.check_in_date) && (
+              <span className="flex items-center gap-1">
+                <Icon name="Calendar" size={14} className="text-[#4A7C2E]" />
+                {formatDate(details.checkIn || details.check_in_date)}
+                {(details.checkOut || details.check_out_date) && ` - ${formatDate(details.checkOut || details.check_out_date)}`}
+              </span>
+            )}
+            {details.date && !details.checkIn && (
+              <span className="flex items-center gap-1">
+                <Icon name="Calendar" size={14} className="text-[#4A7C2E]" />
+                {formatDate(details.date)}
+              </span>
+            )}
+            {(details.guests || details.participants) && (
+              <span className="flex items-center gap-1">
+                <Icon name="Users" size={14} className="text-[#FF8C5A]" />
+                {details.guests || details.participants} {details.guests ? 'Guests' : 'Participants'}
+              </span>
+            )}
+            {details.nights && (
+              <span className="flex items-center gap-1">
+                <Icon name="Moon" size={14} className="text-[#A0522D]" />
+                {details.nights} Nights
+              </span>
+            )}
           </div>
-
-          <div className="mt-8 md:mt-12 p-4 md:p-6 bg-muted/50 border border-border rounded-xl">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex items-start gap-3 flex-1">
-                <Icon name="Info" size={20} color="var(--color-primary)" strokeWidth={2} className="flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-heading text-base md:text-lg font-semibold text-foreground mb-1">
-                    What happens after checkout?
-                  </h3>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Instant booking confirmation via email and SMS</li>
-                    <li>• Auto-generated login credentials (if account creation selected)</li>
-                    <li>• Downloadable PDF with visit guidelines and directions</li>
-                    <li>• Payment receipt and booking reference number</li>
-                  </ul>
-                </div>
+          
+          {/* Quantity & Price */}
+          <div className="flex items-center justify-between">
+            {item.item_type === 'product' ? (
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                  className="w-8 h-8 rounded-lg bg-[#0D1A0D] text-[#9CA38B] hover:text-white flex items-center justify-center"
+                  data-testid={`decrease-qty-${index}`}
+                >
+                  <Icon name="Minus" size={16} />
+                </button>
+                <span className="w-8 text-center text-white font-medium">{item.quantity}</span>
+                <button 
+                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  className="w-8 h-8 rounded-lg bg-[#0D1A0D] text-[#9CA38B] hover:text-white flex items-center justify-center"
+                  data-testid={`increase-qty-${index}`}
+                >
+                  <Icon name="Plus" size={16} />
+                </button>
               </div>
-              <Button
-                variant="outline"
-                size="default"
-                iconName="HelpCircle"
-                iconPosition="left">
-
-                Need Help?
-              </Button>
+            ) : (
+              <span className="text-sm text-[#9CA38B]">Qty: {item.quantity}</span>
+            )}
+            <div className="text-right">
+              <p className="text-xl font-bold text-[#4A7C2E]">₹{item.total_price?.toLocaleString()}</p>
+              {item.quantity > 1 && (
+                <p className="text-xs text-[#9CA38B]">₹{item.unit_price?.toLocaleString()} each</p>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </>);
+    );
+  };
 
+  // Empty Cart State
+  if (!cartLoading && cartItems.length === 0 && checkoutStep !== 'confirmation') {
+    return (
+      <div className="min-h-screen bg-[#0D1A0D]">
+        <Header />
+        <main className="pt-[88px] px-4 pb-12">
+          <div className="max-w-2xl mx-auto text-center py-20">
+            <div className="w-24 h-24 mx-auto mb-6 bg-[#152415] rounded-full flex items-center justify-center">
+              <Icon name="ShoppingCart" size={48} className="text-[#4A7C2E]/50" />
+            </div>
+            <h1 className="font-heading font-bold text-3xl text-white mb-4">Your Cart is Empty</h1>
+            <p className="text-[#9CA38B] mb-8">Explore our accommodations, activities, and products to start planning your adventure.</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-[#4A7C2E] to-[#2D5016]">
+                <Icon name="Home" size={18} /> Browse Accommodations
+              </Button>
+              <Button onClick={() => navigate('/activity-booking')} variant="outline" className="border-[#FF8C5A] text-[#FF8C5A]">
+                <Icon name="Compass" size={18} /> Explore Activities
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Confirmation Page
+  if (checkoutStep === 'confirmation' && orderResult) {
+    return (
+      <div className="min-h-screen bg-[#0D1A0D]">
+        <Header />
+        <main className="pt-[88px] px-4 pb-12">
+          <div className="max-w-2xl mx-auto text-center py-12">
+            <div className="w-24 h-24 mx-auto mb-6 bg-green-500/20 rounded-full flex items-center justify-center">
+              <Icon name="CheckCircle" size={48} className="text-green-400" />
+            </div>
+            <h1 className="font-heading font-bold text-3xl text-white mb-2">Booking Confirmed!</h1>
+            <p className="text-[#9CA38B] mb-8">Thank you for your booking. A confirmation email has been sent.</p>
+            
+            <div className="bg-[#152415] rounded-2xl p-6 border border-[#4A7C2E]/30 text-left mb-6">
+              <h3 className="font-heading font-semibold text-lg text-white mb-4">Order Details</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-[#9CA38B]">Order ID</span>
+                  <span className="text-white font-mono">{orderResult.order_id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#9CA38B]">Booking Reference(s)</span>
+                  <span className="text-[#4A7C2E] font-mono">{orderResult.booking_references?.join(', ')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#9CA38B]">Total Amount</span>
+                  <span className="text-white font-bold text-lg">₹{orderResult.total_amount?.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {orderResult.user_password && (
+              <div className="bg-[#FF8C5A]/10 border border-[#FF8C5A]/30 rounded-xl p-6 mb-6 text-left">
+                <div className="flex items-start gap-3">
+                  <Icon name="Key" size={24} className="text-[#FF8C5A] flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-white mb-1">Your Account Has Been Created!</h4>
+                    <p className="text-[#9CA38B] text-sm mb-3">
+                      Save these credentials to view your bookings and manage your profile:
+                    </p>
+                    <div className="bg-[#0D1A0D] rounded-lg p-3 font-mono text-sm">
+                      <p className="text-[#9CA38B]">Email: <span className="text-white">{guestInfo.email}</span></p>
+                      <p className="text-[#9CA38B]">Password: <span className="text-[#FF8C5A]">{orderResult.user_password}</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button 
+                onClick={() => navigate('/user-dashboard')} 
+                className="bg-gradient-to-r from-[#4A7C2E] to-[#2D5016]"
+                data-testid="view-bookings-btn"
+              >
+                <Icon name="User" size={18} /> View My Bookings
+              </Button>
+              <Button onClick={() => navigate('/')} variant="outline" className="border-[#4A7C2E]/50 text-[#9CA38B]">
+                <Icon name="Home" size={18} /> Back to Home
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0D1A0D]" data-testid="shopping-cart-page">
+      <Header />
+      
+      <main className="pt-[88px] px-4 pb-12">
+        <div className="max-w-6xl mx-auto">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="font-heading font-bold text-3xl md:text-4xl text-white mb-2">
+              {checkoutStep === 'cart' ? 'Shopping Cart' : 'Checkout'}
+            </h1>
+            
+            {/* Progress Steps */}
+            <div className="flex items-center gap-2 mt-4">
+              {['cart', 'details', 'payment'].map((step, idx) => (
+                <React.Fragment key={step}>
+                  <div className={`flex items-center gap-2 ${
+                    checkoutStep === step ? 'text-[#4A7C2E]' : 
+                    ['details', 'payment'].indexOf(checkoutStep) > ['details', 'payment'].indexOf(step) ? 'text-[#4A7C2E]' : 'text-[#9CA38B]/50'
+                  }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      checkoutStep === step ? 'bg-[#4A7C2E] text-white' : 
+                      ['details', 'payment'].indexOf(checkoutStep) > ['details', 'payment'].indexOf(step) ? 'bg-[#4A7C2E]/50 text-white' : 'bg-[#152415] text-[#9CA38B]'
+                    }`}>
+                      {idx + 1}
+                    </div>
+                    <span className="text-sm font-medium hidden sm:inline">
+                      {step === 'cart' ? 'Review Cart' : step === 'details' ? 'Your Details' : 'Payment'}
+                    </span>
+                  </div>
+                  {idx < 2 && <div className="w-8 h-px bg-[#4A7C2E]/30" />}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-4">
+              {checkoutStep === 'cart' && (
+                <>
+                  {cartItems.map((item, index) => (
+                    <CartItemCard key={item.id} item={item} index={index} />
+                  ))}
+                  
+                  <div className="flex justify-between items-center pt-4">
+                    <button 
+                      onClick={() => navigate(-1)}
+                      className="text-[#9CA38B] hover:text-white flex items-center gap-2"
+                    >
+                      <Icon name="ArrowLeft" size={18} /> Continue Shopping
+                    </button>
+                    <button 
+                      onClick={clearCart}
+                      className="text-red-400 hover:text-red-300 flex items-center gap-2 text-sm"
+                      data-testid="clear-cart-btn"
+                    >
+                      <Icon name="Trash2" size={16} /> Clear Cart
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {checkoutStep === 'details' && (
+                <div className="bg-[#152415] rounded-2xl p-6 border border-[#4A7C2E]/30">
+                  <h2 className="font-heading font-semibold text-xl text-white mb-6 flex items-center gap-3">
+                    <Icon name="User" size={24} className="text-[#4A7C2E]" />
+                    Guest Information
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#9CA38B] mb-2">Full Name *</label>
+                      <input
+                        type="text"
+                        value={guestInfo.fullName}
+                        onChange={(e) => setGuestInfo(prev => ({ ...prev, fullName: e.target.value }))}
+                        className={`w-full px-4 py-3 bg-[#0D1A0D] border ${errors.fullName ? 'border-red-500' : 'border-[#4A7C2E]/30'} rounded-xl text-white focus:outline-none focus:border-[#4A7C2E]`}
+                        placeholder="Enter your full name"
+                        data-testid="guest-name-input"
+                      />
+                      {errors.fullName && <p className="text-red-400 text-xs mt-1">{errors.fullName}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[#9CA38B] mb-2">Email Address *</label>
+                      <input
+                        type="email"
+                        value={guestInfo.email}
+                        onChange={(e) => setGuestInfo(prev => ({ ...prev, email: e.target.value }))}
+                        className={`w-full px-4 py-3 bg-[#0D1A0D] border ${errors.email ? 'border-red-500' : 'border-[#4A7C2E]/30'} rounded-xl text-white focus:outline-none focus:border-[#4A7C2E]`}
+                        placeholder="your.email@example.com"
+                        data-testid="guest-email-input"
+                      />
+                      {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#9CA38B] mb-2">Phone Number *</label>
+                        <input
+                          type="tel"
+                          value={guestInfo.phone}
+                          onChange={(e) => setGuestInfo(prev => ({ ...prev, phone: e.target.value }))}
+                          className={`w-full px-4 py-3 bg-[#0D1A0D] border ${errors.phone ? 'border-red-500' : 'border-[#4A7C2E]/30'} rounded-xl text-white focus:outline-none focus:border-[#4A7C2E]`}
+                          placeholder="10-digit mobile number"
+                          data-testid="guest-phone-input"
+                        />
+                        {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#9CA38B] mb-2">Alternate Phone</label>
+                        <input
+                          type="tel"
+                          value={guestInfo.alternatePhone}
+                          onChange={(e) => setGuestInfo(prev => ({ ...prev, alternatePhone: e.target.value }))}
+                          className="w-full px-4 py-3 bg-[#0D1A0D] border border-[#4A7C2E]/30 rounded-xl text-white focus:outline-none focus:border-[#4A7C2E]"
+                          placeholder="Optional"
+                        />
+                      </div>
+                    </div>
+
+                    {!isAuthenticated && (
+                      <div className="flex items-start gap-3 p-4 bg-[#4A7C2E]/10 border border-[#4A7C2E]/30 rounded-xl">
+                        <input
+                          type="checkbox"
+                          id="createAccount"
+                          checked={guestInfo.createAccount}
+                          onChange={(e) => setGuestInfo(prev => ({ ...prev, createAccount: e.target.checked }))}
+                          className="mt-1 w-5 h-5 rounded border-[#4A7C2E]/30 bg-[#0D1A0D] text-[#4A7C2E]"
+                          data-testid="create-account-checkbox"
+                        />
+                        <label htmlFor="createAccount" className="text-sm">
+                          <span className="text-white font-medium">Create an account</span>
+                          <p className="text-[#9CA38B] mt-0.5">
+                            Get access to your bookings, special offers, and manage your profile. 
+                            We'll send your login credentials to your email.
+                          </p>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {checkoutStep === 'payment' && (
+                <div className="bg-[#152415] rounded-2xl p-6 border border-[#4A7C2E]/30">
+                  <h2 className="font-heading font-semibold text-xl text-white mb-6 flex items-center gap-3">
+                    <Icon name="CreditCard" size={24} className="text-[#4A7C2E]" />
+                    Payment Method
+                  </h2>
+                  
+                  {/* Demo Payment Notice */}
+                  <div className="p-4 bg-[#FF8C5A]/10 border border-[#FF8C5A]/30 rounded-xl mb-6">
+                    <div className="flex items-start gap-3">
+                      <Icon name="Info" size={20} className="text-[#FF8C5A] flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-white font-medium">Demo Mode</p>
+                        <p className="text-[#9CA38B] text-sm">
+                          This is a demo checkout. No actual payment will be processed. 
+                          Click "Confirm Booking" to simulate a successful payment.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Options */}
+                  <div className="space-y-3">
+                    {[
+                      { id: 'card', label: 'Credit/Debit Card', icon: 'CreditCard' },
+                      { id: 'upi', label: 'UPI Payment', icon: 'Smartphone' },
+                      { id: 'netbanking', label: 'Net Banking', icon: 'Landmark' }
+                    ].map(option => (
+                      <label 
+                        key={option.id}
+                        className="flex items-center gap-4 p-4 bg-[#0D1A0D] border border-[#4A7C2E]/30 rounded-xl cursor-pointer hover:border-[#4A7C2E]/50 transition-colors"
+                      >
+                        <input 
+                          type="radio" 
+                          name="payment" 
+                          value={option.id}
+                          defaultChecked={option.id === 'card'}
+                          className="w-5 h-5 text-[#4A7C2E]"
+                        />
+                        <Icon name={option.icon} size={20} className="text-[#4A7C2E]" />
+                        <span className="text-white">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Order Summary Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-[#152415] rounded-2xl p-6 border border-[#4A7C2E]/30 sticky top-24">
+                <h2 className="font-heading font-semibold text-lg text-white mb-4">Order Summary</h2>
+                
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#9CA38B]">Items ({cartItems.length})</span>
+                    <span className="text-white">₹{subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#9CA38B]">GST ({gstRate}%)</span>
+                    <span className="text-white">₹{gstAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-[#4A7C2E]/30 pt-3 flex justify-between">
+                    <span className="text-white font-semibold">Total</span>
+                    <span className="text-[#4A7C2E] font-bold text-xl">₹{totalAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Cart Items Summary */}
+                <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
+                  {cartItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-2 bg-[#0D1A0D] rounded-lg">
+                      <div className="w-10 h-10 bg-[#4A7C2E]/20 rounded flex items-center justify-center">
+                        <Icon 
+                          name={item.item_type === 'accommodation' ? 'Home' : item.item_type === 'activity' ? 'Compass' : 'ShoppingBag'} 
+                          size={16} 
+                          className="text-[#4A7C2E]" 
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm truncate">{item.item_name}</p>
+                        <p className="text-[#9CA38B] text-xs">Qty: {item.quantity}</p>
+                      </div>
+                      <p className="text-white text-sm">₹{item.total_price?.toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                {checkoutStep === 'cart' && (
+                  <Button 
+                    onClick={() => setCheckoutStep('details')}
+                    className="w-full bg-gradient-to-r from-[#4A7C2E] to-[#2D5016]"
+                    data-testid="proceed-checkout-btn"
+                  >
+                    Proceed to Checkout <Icon name="ArrowRight" size={18} />
+                  </Button>
+                )}
+
+                {checkoutStep === 'details' && (
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => setCheckoutStep('payment')}
+                      className="w-full bg-gradient-to-r from-[#4A7C2E] to-[#2D5016]"
+                      data-testid="proceed-payment-btn"
+                    >
+                      Continue to Payment <Icon name="ArrowRight" size={18} />
+                    </Button>
+                    <button 
+                      onClick={() => setCheckoutStep('cart')}
+                      className="w-full text-[#9CA38B] hover:text-white text-sm flex items-center justify-center gap-2"
+                    >
+                      <Icon name="ArrowLeft" size={16} /> Back to Cart
+                    </button>
+                  </div>
+                )}
+
+                {checkoutStep === 'payment' && (
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={handleCheckout}
+                      disabled={processing}
+                      className="w-full bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35]"
+                      data-testid="confirm-booking-btn"
+                    >
+                      {processing ? (
+                        <>
+                          <Icon name="Loader2" size={18} className="animate-spin" /> Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="Check" size={18} /> Confirm Booking
+                        </>
+                      )}
+                    </Button>
+                    <button 
+                      onClick={() => setCheckoutStep('details')}
+                      className="w-full text-[#9CA38B] hover:text-white text-sm flex items-center justify-center gap-2"
+                    >
+                      <Icon name="ArrowLeft" size={16} /> Back to Details
+                    </button>
+                  </div>
+                )}
+
+                {/* Secure Checkout Badge */}
+                <div className="mt-6 flex items-center justify-center gap-2 text-xs text-[#9CA38B]">
+                  <Icon name="Shield" size={14} className="text-[#4A7C2E]" />
+                  <span>Secure checkout powered by SSL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default ShoppingCart;

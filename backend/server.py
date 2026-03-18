@@ -95,6 +95,7 @@ class Booking(Base):
     __tablename__ = "bookings"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     booking_reference = Column(String(50), unique=True, nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"))  # Link to user if account exists
     customer_name = Column(String(255), nullable=False)
     customer_email = Column(String(255), nullable=False)
     customer_phone = Column(String(20))
@@ -207,6 +208,40 @@ class IntegrationSetting(Base):
     setting_value = Column(Text)
     is_enabled = Column(Boolean, default=False)
     description = Column(Text)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(20), unique=True, nullable=False)  # MTR2026001234 format
+    full_name = Column(String(255), nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
+    phone = Column(String(20), nullable=False)
+    encrypted_password = Column(String(255), nullable=False)
+    alternate_phone = Column(String(20))
+    address = Column(Text)
+    city = Column(String(100))
+    state = Column(String(100))
+    pincode = Column(String(10))
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    last_login_at = Column(DateTime)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    session_id = Column(String(100), nullable=False)  # For guest users
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"))  # For logged in users
+    item_type = Column(String(20), nullable=False)  # accommodation, activity, product
+    item_id = Column(String(36))
+    item_name = Column(String(255), nullable=False)
+    item_details = Column(Text)  # JSON with all item specific details
+    quantity = Column(Integer, default=1)
+    unit_price = Column(Numeric(10, 2), nullable=False)
+    total_price = Column(Numeric(10, 2), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -371,6 +406,90 @@ class AvailabilityCheckResponse(BaseModel):
     safari_available: bool
     safari_slots: int
 
+# User-related Pydantic models
+class UserRegisterRequest(BaseModel):
+    full_name: str
+    email: str
+    phone: str
+    password: Optional[str] = None  # Auto-generated if not provided
+    alternate_phone: Optional[str] = None
+    create_account: bool = True
+
+class UserLoginRequest(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    user_id: str
+    full_name: str
+    email: str
+    phone: str
+    alternate_phone: Optional[str]
+    address: Optional[str]
+    city: Optional[str]
+    state: Optional[str]
+    pincode: Optional[str]
+    is_verified: bool
+    created_at: str
+    total_bookings: int = 0
+    upcoming_bookings: int = 0
+    completed_bookings: int = 0
+
+class UserLoginResponse(BaseModel):
+    success: bool
+    token: Optional[str] = None
+    user: Optional[UserResponse] = None
+    message: Optional[str] = None
+
+class UserUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    alternate_phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+
+class CartItemCreate(BaseModel):
+    session_id: str
+    item_type: str  # accommodation, activity, product
+    item_id: Optional[str] = None
+    item_name: str
+    item_details: dict
+    quantity: int = 1
+    unit_price: float
+    total_price: float
+
+class CartItemResponse(BaseModel):
+    id: str
+    item_type: str
+    item_id: Optional[str]
+    item_name: str
+    item_details: dict
+    quantity: int
+    unit_price: float
+    total_price: float
+
+class CheckoutRequest(BaseModel):
+    session_id: str
+    full_name: str
+    email: str
+    phone: str
+    alternate_phone: Optional[str] = None
+    create_account: bool = True
+    payment_method: str = "card"
+    items: List[dict]  # Cart items with all details
+
+class CheckoutResponse(BaseModel):
+    success: bool
+    order_id: str
+    booking_references: List[str]
+    user_id: Optional[str] = None
+    user_password: Optional[str] = None  # Only sent if new account created
+    total_amount: float
+    message: str
+
 # ==================== HELPER FUNCTIONS ====================
 
 def get_db():
@@ -417,6 +536,18 @@ def generate_booking_reference() -> str:
     year = datetime.now().year
     num = random.randint(1000, 9999)
     return f"BK-{year}-{num}"
+
+def generate_user_id() -> str:
+    import random
+    year = datetime.now().year
+    number = random.randint(100000, 999999)
+    return f"MTR{year}{number}"
+
+def generate_random_password(length: int = 8) -> str:
+    import random
+    import string
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
 
 # ==================== API ENDPOINTS ====================
 
@@ -1127,6 +1258,402 @@ def init_database(db: Session = Depends(get_db)):
     
     db.commit()
     return {"success": True, "message": "Database initialized with seed data"}
+
+# ==================== USER API ENDPOINTS ====================
+
+@app.post("/api/users/register", response_model=UserLoginResponse)
+def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
+    """Register a new user or create account during checkout"""
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == request.email).first()
+    if existing_user:
+        return UserLoginResponse(success=False, message="User with this email already exists. Please login instead.")
+    
+    # Generate password if not provided
+    password = request.password if request.password else generate_random_password()
+    
+    # Create user
+    user = User(
+        user_id=generate_user_id(),
+        full_name=request.full_name,
+        email=request.email,
+        phone=request.phone,
+        encrypted_password=hash_password(password),
+        alternate_phone=request.alternate_phone,
+        is_verified=False
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Create token
+    token = create_access_token({"sub": user.id, "user_id": user.user_id, "email": user.email, "type": "user"})
+    
+    # Get booking counts
+    total_bookings = db.query(Booking).filter(Booking.customer_email == user.email).count()
+    upcoming = db.query(Booking).filter(
+        Booking.customer_email == user.email,
+        Booking.status == "confirmed",
+        Booking.check_in_date >= datetime.now(timezone.utc).date()
+    ).count()
+    completed = db.query(Booking).filter(
+        Booking.customer_email == user.email,
+        Booking.status == "completed"
+    ).count()
+    
+    user_response = UserResponse(
+        id=user.id,
+        user_id=user.user_id,
+        full_name=user.full_name,
+        email=user.email,
+        phone=user.phone,
+        alternate_phone=user.alternate_phone,
+        address=user.address,
+        city=user.city,
+        state=user.state,
+        pincode=user.pincode,
+        is_verified=user.is_verified,
+        created_at=user.created_at.isoformat() if user.created_at else "",
+        total_bookings=total_bookings,
+        upcoming_bookings=upcoming,
+        completed_bookings=completed
+    )
+    
+    return UserLoginResponse(
+        success=True,
+        token=token,
+        user=user_response,
+        message=f"Account created successfully. Your password is: {password}" if not request.password else "Account created successfully"
+    )
+
+@app.post("/api/users/login", response_model=UserLoginResponse)
+def login_user(request: UserLoginRequest, db: Session = Depends(get_db)):
+    """User login"""
+    user = db.query(User).filter(User.email == request.email, User.is_active == True).first()
+    
+    if not user or not verify_password(request.password, user.encrypted_password):
+        return UserLoginResponse(success=False, message="Invalid email or password")
+    
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
+    
+    token = create_access_token({"sub": user.id, "user_id": user.user_id, "email": user.email, "type": "user"})
+    
+    # Get booking counts
+    total_bookings = db.query(Booking).filter(Booking.customer_email == user.email).count()
+    upcoming = db.query(Booking).filter(
+        Booking.customer_email == user.email,
+        Booking.status == "confirmed",
+        Booking.check_in_date >= datetime.now(timezone.utc).date()
+    ).count()
+    completed = db.query(Booking).filter(
+        Booking.customer_email == user.email,
+        Booking.status == "completed"
+    ).count()
+    
+    user_response = UserResponse(
+        id=user.id,
+        user_id=user.user_id,
+        full_name=user.full_name,
+        email=user.email,
+        phone=user.phone,
+        alternate_phone=user.alternate_phone,
+        address=user.address,
+        city=user.city,
+        state=user.state,
+        pincode=user.pincode,
+        is_verified=user.is_verified,
+        created_at=user.created_at.isoformat() if user.created_at else "",
+        total_bookings=total_bookings,
+        upcoming_bookings=upcoming,
+        completed_bookings=completed
+    )
+    
+    return UserLoginResponse(success=True, token=token, user=user_response)
+
+@app.get("/api/users/profile")
+def get_user_profile(payload: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    """Get current user profile"""
+    user_id = payload.get("sub")
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get booking counts
+    total_bookings = db.query(Booking).filter(Booking.customer_email == user.email).count()
+    upcoming = db.query(Booking).filter(
+        Booking.customer_email == user.email,
+        Booking.status == "confirmed",
+        Booking.check_in_date >= datetime.now(timezone.utc).date()
+    ).count()
+    completed = db.query(Booking).filter(
+        Booking.customer_email == user.email,
+        Booking.status == "completed"
+    ).count()
+    
+    return {
+        "id": user.id,
+        "user_id": user.user_id,
+        "full_name": user.full_name,
+        "email": user.email,
+        "phone": user.phone,
+        "alternate_phone": user.alternate_phone,
+        "address": user.address,
+        "city": user.city,
+        "state": user.state,
+        "pincode": user.pincode,
+        "is_verified": user.is_verified,
+        "member_since": user.created_at.isoformat() if user.created_at else None,
+        "total_bookings": total_bookings,
+        "upcoming_bookings": upcoming,
+        "completed_bookings": completed
+    }
+
+@app.put("/api/users/profile")
+def update_user_profile(request: UserUpdateRequest, payload: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    """Update user profile"""
+    user_id = payload.get("sub")
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if request.full_name:
+        user.full_name = request.full_name
+    if request.phone:
+        user.phone = request.phone
+    if request.alternate_phone is not None:
+        user.alternate_phone = request.alternate_phone
+    if request.address is not None:
+        user.address = request.address
+    if request.city is not None:
+        user.city = request.city
+    if request.state is not None:
+        user.state = request.state
+    if request.pincode is not None:
+        user.pincode = request.pincode
+    
+    db.commit()
+    return {"success": True, "message": "Profile updated successfully"}
+
+@app.get("/api/users/bookings")
+def get_user_bookings(payload: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    """Get all bookings for current user"""
+    user_email = payload.get("email")
+    
+    bookings = db.query(Booking).filter(Booking.customer_email == user_email).order_by(Booking.created_at.desc()).all()
+    
+    return [{
+        "id": b.id,
+        "booking_reference": b.booking_reference,
+        "booking_type": b.booking_type,
+        "item_name": b.item_name,
+        "booking_date": str(b.booking_date) if b.booking_date else None,
+        "check_in_date": str(b.check_in_date) if b.check_in_date else None,
+        "check_out_date": str(b.check_out_date) if b.check_out_date else None,
+        "guests_count": b.guests_count,
+        "amount": float(b.amount),
+        "gst_amount": float(b.gst_amount) if b.gst_amount else 0,
+        "net_amount": float(b.net_amount) if b.net_amount else 0,
+        "status": b.status,
+        "payment_status": b.payment_status,
+        "created_at": b.created_at.isoformat() if b.created_at else None
+    } for b in bookings]
+
+# ==================== CART API ENDPOINTS ====================
+
+@app.get("/api/cart/{session_id}")
+def get_cart(session_id: str, db: Session = Depends(get_db)):
+    """Get cart items by session ID"""
+    import json
+    cart_items = db.query(CartItem).filter(CartItem.session_id == session_id).all()
+    
+    return [{
+        "id": item.id,
+        "item_type": item.item_type,
+        "item_id": item.item_id,
+        "item_name": item.item_name,
+        "item_details": json.loads(item.item_details) if item.item_details else {},
+        "quantity": item.quantity,
+        "unit_price": float(item.unit_price),
+        "total_price": float(item.total_price)
+    } for item in cart_items]
+
+@app.post("/api/cart/add")
+def add_to_cart(item: CartItemCreate, db: Session = Depends(get_db)):
+    """Add item to cart"""
+    import json
+    
+    # Check if same item already exists in cart
+    existing = db.query(CartItem).filter(
+        CartItem.session_id == item.session_id,
+        CartItem.item_type == item.item_type,
+        CartItem.item_id == item.item_id
+    ).first()
+    
+    if existing and item.item_type == "product":
+        # Update quantity for products
+        existing.quantity += item.quantity
+        existing.total_price = float(existing.unit_price) * existing.quantity
+        db.commit()
+        return {"success": True, "message": "Cart updated", "cart_item_id": existing.id}
+    
+    cart_item = CartItem(
+        session_id=item.session_id,
+        item_type=item.item_type,
+        item_id=item.item_id,
+        item_name=item.item_name,
+        item_details=json.dumps(item.item_details),
+        quantity=item.quantity,
+        unit_price=item.unit_price,
+        total_price=item.total_price
+    )
+    db.add(cart_item)
+    db.commit()
+    db.refresh(cart_item)
+    
+    return {"success": True, "message": "Item added to cart", "cart_item_id": cart_item.id}
+
+@app.put("/api/cart/{cart_item_id}")
+def update_cart_item(cart_item_id: str, quantity: int, db: Session = Depends(get_db)):
+    """Update cart item quantity"""
+    cart_item = db.query(CartItem).filter(CartItem.id == cart_item_id).first()
+    
+    if not cart_item:
+        raise HTTPException(status_code=404, detail="Cart item not found")
+    
+    if quantity <= 0:
+        db.delete(cart_item)
+    else:
+        cart_item.quantity = quantity
+        cart_item.total_price = float(cart_item.unit_price) * quantity
+    
+    db.commit()
+    return {"success": True, "message": "Cart updated"}
+
+@app.delete("/api/cart/{cart_item_id}")
+def remove_from_cart(cart_item_id: str, db: Session = Depends(get_db)):
+    """Remove item from cart"""
+    cart_item = db.query(CartItem).filter(CartItem.id == cart_item_id).first()
+    
+    if not cart_item:
+        raise HTTPException(status_code=404, detail="Cart item not found")
+    
+    db.delete(cart_item)
+    db.commit()
+    return {"success": True, "message": "Item removed from cart"}
+
+@app.delete("/api/cart/clear/{session_id}")
+def clear_cart(session_id: str, db: Session = Depends(get_db)):
+    """Clear all items from cart"""
+    db.query(CartItem).filter(CartItem.session_id == session_id).delete()
+    db.commit()
+    return {"success": True, "message": "Cart cleared"}
+
+# ==================== CHECKOUT API ====================
+
+@app.post("/api/checkout", response_model=CheckoutResponse)
+def process_checkout(request: CheckoutRequest, db: Session = Depends(get_db)):
+    """Process checkout - creates bookings and optionally user account"""
+    import json
+    from datetime import date
+    
+    # Check if user exists or needs to be created
+    user = db.query(User).filter(User.email == request.email).first()
+    user_password = None
+    
+    if not user and request.create_account:
+        # Create new user account
+        user_password = generate_random_password()
+        user = User(
+            user_id=generate_user_id(),
+            full_name=request.full_name,
+            email=request.email,
+            phone=request.phone,
+            encrypted_password=hash_password(user_password),
+            alternate_phone=request.alternate_phone,
+            is_verified=False
+        )
+        db.add(user)
+        db.flush()
+    
+    # Generate order ID
+    order_id = f"ORD-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+    booking_references = []
+    total_amount = 0
+    
+    # Create bookings for each cart item
+    for item in request.items:
+        booking_ref = generate_booking_reference()
+        booking_references.append(booking_ref)
+        
+        item_amount = float(item.get("total_price", item.get("unit_price", 0)))
+        gst_rate = 12.0
+        gst_amount = round(item_amount * gst_rate / 100, 2)
+        net_amount = round(item_amount - gst_amount, 2)
+        total_amount += item_amount + gst_amount
+        
+        # Parse dates
+        check_in = None
+        check_out = None
+        booking_date_val = date.today()
+        
+        details = item.get("item_details", {})
+        if details.get("check_in_date") or details.get("checkIn"):
+            try:
+                date_str = details.get("check_in_date") or details.get("checkIn")
+                check_in = datetime.strptime(date_str, "%Y-%m-%d").date()
+                booking_date_val = check_in
+            except:
+                pass
+        if details.get("check_out_date") or details.get("checkOut"):
+            try:
+                date_str = details.get("check_out_date") or details.get("checkOut")
+                check_out = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except:
+                pass
+        if details.get("date"):
+            try:
+                booking_date_val = datetime.strptime(details.get("date"), "%Y-%m-%d").date()
+            except:
+                pass
+        
+        booking = Booking(
+            booking_reference=booking_ref,
+            customer_name=request.full_name,
+            customer_email=request.email,
+            customer_phone=request.phone,
+            booking_type=item.get("item_type", "product"),
+            item_id=item.get("item_id"),
+            item_name=item.get("item_name"),
+            booking_date=booking_date_val,
+            check_in_date=check_in,
+            check_out_date=check_out,
+            guests_count=details.get("guests", details.get("participants", 1)),
+            amount=item_amount,
+            gst_rate=gst_rate,
+            gst_amount=gst_amount,
+            net_amount=net_amount,
+            status="confirmed",
+            payment_status="paid"
+        )
+        db.add(booking)
+    
+    # Clear cart
+    db.query(CartItem).filter(CartItem.session_id == request.session_id).delete()
+    
+    db.commit()
+    
+    return CheckoutResponse(
+        success=True,
+        order_id=order_id,
+        booking_references=booking_references,
+        user_id=user.user_id if user else None,
+        user_password=user_password,
+        total_amount=round(total_amount, 2),
+        message="Booking confirmed successfully!" + (f" Your login credentials have been created." if user_password else "")
+    )
 
 if __name__ == "__main__":
     import uvicorn

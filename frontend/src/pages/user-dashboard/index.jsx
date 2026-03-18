@@ -1,454 +1,402 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
 import Header from '../../components/navigation/Header';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-import BookingCard from './components/BookingCard';
-import QuickActionCard from './components/QuickActionCard';
-import ProfileSection from './components/ProfileSection';
-import PreferencesSection from './components/PreferencesSection';
-import AdoptionHistoryCard from './components/AdoptionHistoryCard';
-import StatsCard from './components/StatsCard';
+import { useUserAuth } from '../../contexts/UserAuthContext';
+import api from '../../lib/api';
+
+// Simple toast notification
+const showToast = (message, type = 'success') => {
+  const toastEl = document.createElement('div');
+  toastEl.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all transform ${
+    type === 'success' ? 'bg-green-600 text-white' : type === 'error' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'
+  }`;
+  toastEl.textContent = message;
+  document.body.appendChild(toastEl);
+  setTimeout(() => toastEl.remove(), 3000);
+};
 
 const UserDashboard = () => {
   const navigate = useNavigate();
+  const { user, token, isAuthenticated, logout, loading: authLoading } = useUserAuth();
+  
   const [activeTab, setActiveTab] = useState('bookings');
-  const [bookingFilter, setBookingFilter] = useState('upcoming');
+  const [bookings, setBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
 
-  const [userData] = useState({
-    userId: 'MTR2026001234',
-    fullName: 'Rajesh Kumar',
-    email: 'rajesh.kumar@email.com',
-    phone: '9876543210',
-    emergencyContact: 'Priya Kumar',
-    emergencyPhone: '9876543211',
-    address: '123 MG Road',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    pincode: '560001',
-    memberSince: '2025-06-15',
-    totalBookings: 12,
-    upcomingBookings: 2,
-    completedBookings: 10
-  });
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchBookings();
+    } else if (!authLoading) {
+      setShowLoginModal(true);
+      setLoadingBookings(false);
+    }
+  }, [isAuthenticated, token, authLoading]);
 
-  const [preferences, setPreferences] = useState({
-    favoriteLocations: ['masinagudi', 'thepakadu'],
-    activityInterests: ['jeep-safari', 'elephant-camp'],
-    dietaryRequirements: ['vegetarian'],
-    emailNotifications: true,
-    smsNotifications: true,
-    promotionalEmails: false,
-    bookingReminders: true,
-    preferredLanguage: 'english'
-  });
-
-  const [bookings] = useState([
-  {
-    id: 1,
-    bookingId: 'MTR-ACC-2026-001',
-    type: 'accommodation',
-    title: 'Deluxe Cottage',
-    location: 'Masinagudi, Mudumalai Tiger Reserve',
-    image: "https://images.unsplash.com/photo-1645636587227-6bef9903da62",
-    imageAlt: 'Luxurious wooden cottage with large windows surrounded by dense forest greenery and mountain views in background',
-    checkIn: '2026-02-15',
-    checkOut: '2026-02-18',
-    guests: 4,
-    roomType: 'Deluxe Cottage',
-    nights: 3,
-    totalAmount: 18000,
-    status: 'confirmed'
-  },
-  {
-    id: 2,
-    bookingId: 'MTR-ACT-2026-002',
-    type: 'activity',
-    title: 'Jeep Safari',
-    location: 'Thepakadu, Mudumalai Tiger Reserve',
-    image: "https://images.unsplash.com/photo-1629822700341-87e5dcd2fa9a",
-    imageAlt: 'Open-top safari jeep with tourists driving through dense jungle trail with tall trees and wildlife viewing opportunities',
-    activityDate: '2026-02-16',
-    timeSlot: '06:00 AM - 09:00 AM',
-    participants: 4,
-    activityType: 'Jeep Safari',
-    totalAmount: 4000,
-    status: 'confirmed'
-  },
-  {
-    id: 3,
-    bookingId: 'MTR-ACC-2026-003',
-    type: 'accommodation',
-    title: 'Standard Room',
-    location: 'Gudalur, Mudumalai Tiger Reserve',
-    image: "https://img.rocket.new/generatedImages/rocket_gen_img_10a0f4ace-1767530147750.png",
-    imageAlt: 'Comfortable hotel room with twin beds, wooden furniture, large window with forest view and modern amenities',
-    checkIn: '2026-03-10',
-    checkOut: '2026-03-12',
-    guests: 2,
-    roomType: 'Standard Room',
-    nights: 2,
-    totalAmount: 8000,
-    status: 'pending'
-  },
-  {
-    id: 4,
-    bookingId: 'MTR-ACT-2025-004',
-    type: 'activity',
-    title: 'Elephant Camp Visit',
-    location: 'Masinagudi, Mudumalai Tiger Reserve',
-    image: "https://img.rocket.new/generatedImages/rocket_gen_img_1a651086d-1768148645003.png",
-    imageAlt: 'Group of elephants bathing in river with mahouts and tourists watching from safe distance in natural habitat',
-    activityDate: '2025-12-20',
-    timeSlot: '10:00 AM - 12:00 PM',
-    participants: 3,
-    activityType: 'Elephant Camp Visit',
-    totalAmount: 1500,
-    status: 'confirmed'
-  }]
-  );
-
-  const [adoptionHistory] = useState([
-  {
-    id: 1,
-    animalName: 'Raja',
-    species: 'Bengal Tiger',
-    animalImage: "https://images.unsplash.com/photo-1687260275534-2d6f7016f89c",
-    animalImageAlt: 'Majestic Bengal tiger with orange and black stripes walking through tall grass in natural forest habitat',
-    adoptionDate: '2025-08-15',
-    duration: '1 Year',
-    amount: 25000,
-    status: 'active',
-    certificateUrl: '/certificates/adoption-raja.pdf'
-  },
-  {
-    id: 2,
-    animalName: 'Lakshmi',
-    species: 'Asian Elephant',
-    animalImage: "https://images.unsplash.com/photo-1695280087835-b129a44d57f9",
-    animalImageAlt: 'Large Asian elephant with tusks standing in shallow water surrounded by lush green vegetation',
-    adoptionDate: '2025-01-10',
-    duration: '6 Months',
-    amount: 15000,
-    status: 'completed',
-    certificateUrl: '/certificates/adoption-lakshmi.pdf'
-  }]
-  );
-
-  const upcomingBookings = bookings?.filter((b) =>
-  b?.status === 'confirmed' &&
-  new Date(b.checkIn || b.activityDate) > new Date()
-  );
-
-  const pastBookings = bookings?.filter((b) =>
-  new Date(b.checkIn || b.activityDate) < new Date()
-  );
-
-  const pendingBookings = bookings?.filter((b) => b?.status === 'pending');
-
-  const handleCancelBooking = (bookingId, refundDetails) => {
-    console.log('Cancelling booking:', bookingId, refundDetails);
+  const fetchBookings = async () => {
+    try {
+      setLoadingBookings(true);
+      const response = await api.get('/api/users/bookings', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setBookings(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch bookings:', error);
+      showToast('Failed to load bookings');
+    } finally {
+      setLoadingBookings(false);
+    }
   };
 
-  const handleModifyBooking = (bookingId) => {
-    console.log('Modifying booking:', bookingId);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoggingIn(true);
+    
+    try {
+      const response = await api.post('/api/users/login', loginForm);
+      
+      if (response.data?.success) {
+        localStorage.setItem('user_token', response.data.token);
+        window.location.reload();
+      } else {
+        setLoginError(response.data?.message || 'Login failed');
+      }
+    } catch (error) {
+      setLoginError('Login failed. Please check your credentials.');
+    } finally {
+      setLoggingIn(false);
+    }
   };
 
-  const handleDownloadPDF = (bookingId) => {
-    console.log('Downloading PDF for booking:', bookingId);
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
-  const handleUpdateProfile = (updatedData) => {
-    console.log('Updating profile:', updatedData);
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'confirmed': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'completed': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'pending': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
   };
 
-  const handleUpdatePreferences = (updatedPreferences) => {
-    setPreferences(updatedPreferences);
-    console.log('Preferences updated:', updatedPreferences);
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-IN', { 
+        day: 'numeric', month: 'short', year: 'numeric' 
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
-  const tabs = [
-  { id: 'bookings', label: 'My Bookings', icon: 'Calendar' },
-  { id: 'profile', label: 'Profile', icon: 'User' },
-  { id: 'preferences', label: 'Preferences', icon: 'Settings' },
-  { id: 'adoptions', label: 'Adoptions', icon: 'Heart' }];
+  // Stats calculations
+  const stats = {
+    totalBookings: bookings.length,
+    upcoming: bookings.filter(b => b.status === 'confirmed' && new Date(b.check_in_date) > new Date()).length,
+    completed: bookings.filter(b => b.status === 'completed').length,
+    totalSpent: bookings.filter(b => b.payment_status === 'paid').reduce((sum, b) => sum + (b.amount || 0), 0)
+  };
 
-
-  const renderBookings = () => {
-    let displayBookings = [];
-    if (bookingFilter === 'upcoming') displayBookings = upcomingBookings;else
-    if (bookingFilter === 'past') displayBookings = pastBookings;else
-    if (bookingFilter === 'pending') displayBookings = pendingBookings;
-
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h2 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
-            My Bookings
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={bookingFilter === 'upcoming' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setBookingFilter('upcoming')}>
-
-              Upcoming ({upcomingBookings?.length})
-            </Button>
-            <Button
-              variant={bookingFilter === 'past' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setBookingFilter('past')}>
-
-              Past ({pastBookings?.length})
-            </Button>
-            <Button
-              variant={bookingFilter === 'pending' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setBookingFilter('pending')}>
-
-              Pending ({pendingBookings?.length})
-            </Button>
+  // Login Modal
+  const LoginModal = () => (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#152415] rounded-2xl p-8 max-w-md w-full border border-[#4A7C2E]/30">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 mx-auto mb-4 bg-[#4A7C2E]/20 rounded-full flex items-center justify-center">
+            <Icon name="User" size={32} className="text-[#4A7C2E]" />
           </div>
+          <h2 className="font-heading font-bold text-2xl text-white mb-2">Welcome Back</h2>
+          <p className="text-[#9CA38B] text-sm">Login to view your bookings and manage your account</p>
         </div>
-        {displayBookings?.length > 0 ?
-        <div className="space-y-4">
-            {displayBookings?.map((booking) =>
-          <BookingCard
-            key={booking?.id}
-            booking={booking}
-            onCancel={handleCancelBooking}
-            onModify={handleModifyBooking}
-            onDownload={handleDownloadPDF} />
 
-          )}
-          </div> :
-
-        <div className="bg-card border border-border rounded-xl p-8 md:p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <Icon name="Calendar" size={32} strokeWidth={2} color="var(--color-muted-foreground)" />
+        <form onSubmit={handleLogin} className="space-y-4">
+          {loginError && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+              {loginError}
             </div>
-            <h3 className="text-xl font-heading font-semibold text-foreground mb-2">
-              No {bookingFilter} bookings
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              You don't have any {bookingFilter} bookings at the moment.
-            </p>
-            <Button
-            variant="default"
-            iconName="Plus"
-            iconPosition="left"
-            onClick={() => navigate('/interactive-map-booking')}>
+          )}
 
-              Book Now
-            </Button>
+          <div>
+            <label className="block text-sm font-medium text-[#9CA38B] mb-2">Email</label>
+            <input
+              type="email"
+              value={loginForm.email}
+              onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full px-4 py-3 bg-[#0D1A0D] border border-[#4A7C2E]/30 rounded-xl text-white focus:outline-none focus:border-[#4A7C2E]"
+              placeholder="your.email@example.com"
+              required
+              data-testid="login-email-input"
+            />
           </div>
-        }
-      </div>);
 
-  };
+          <div>
+            <label className="block text-sm font-medium text-[#9CA38B] mb-2">Password</label>
+            <input
+              type="password"
+              value={loginForm.password}
+              onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full px-4 py-3 bg-[#0D1A0D] border border-[#4A7C2E]/30 rounded-xl text-white focus:outline-none focus:border-[#4A7C2E]"
+              placeholder="Enter your password"
+              required
+              data-testid="login-password-input"
+            />
+          </div>
 
-  const renderAdoptions = () => {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h2 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
-            Adoption & Donations
-          </h2>
-          <Button
-            variant="default"
-            iconName="Heart"
-            iconPosition="left"
-            onClick={() => navigate('/e-shop')}>
-
-            Adopt an Animal
+          <Button 
+            type="submit" 
+            disabled={loggingIn}
+            className="w-full bg-gradient-to-r from-[#4A7C2E] to-[#2D5016]"
+            data-testid="login-submit-btn"
+          >
+            {loggingIn ? (
+              <><Icon name="Loader2" size={18} className="animate-spin" /> Logging in...</>
+            ) : (
+              <><Icon name="LogIn" size={18} /> Login</>
+            )}
           </Button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-[#9CA38B] text-sm mb-3">Don't have an account?</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="text-[#4A7C2E] hover:text-[#5A8C3E] text-sm font-medium"
+          >
+            Book your first stay to create one automatically
+          </button>
         </div>
-        {adoptionHistory?.length > 0 ?
-        <div className="space-y-4">
-            {adoptionHistory?.map((adoption) =>
-          <AdoptionHistoryCard key={adoption?.id} adoption={adoption} />
-          )}
-          </div> :
 
-        <div className="bg-card border border-border rounded-xl p-8 md:p-12 text-center">
-            <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Icon name="Heart" size={32} strokeWidth={2} color="var(--color-accent)" />
+        <button 
+          onClick={() => navigate('/')}
+          className="absolute top-4 right-4 p-2 text-[#9CA38B] hover:text-white"
+        >
+          <Icon name="X" size={24} />
+        </button>
+      </div>
+    </div>
+  );
+
+  // If not authenticated, show login
+  if (!isAuthenticated && !authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0D1A0D]">
+        <Header />
+        <main className="pt-[88px] px-4 pb-12">
+          <div className="max-w-2xl mx-auto text-center py-20">
+            <div className="w-24 h-24 mx-auto mb-6 bg-[#152415] rounded-full flex items-center justify-center">
+              <Icon name="Lock" size={48} className="text-[#4A7C2E]/50" />
             </div>
-            <h3 className="text-xl font-heading font-semibold text-foreground mb-2">
-              Support Wildlife Conservation
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Adopt an animal and contribute to wildlife conservation efforts at Mudumalai Tiger Reserve.
-            </p>
-            <Button
-            variant="default"
-            iconName="Heart"
-            iconPosition="left"
-            onClick={() => navigate('/e-shop')}>
-
-              Explore Adoption Programs
-            </Button>
+            <h1 className="font-heading font-bold text-3xl text-white mb-4">Login Required</h1>
+            <p className="text-[#9CA38B] mb-8">Please login to access your dashboard and view your bookings.</p>
           </div>
-        }
-      </div>);
-
-  };
+          <LoginModal />
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <Helmet>
-        <title>User Dashboard - MTR BookingHub</title>
-        <meta name="description" content="Manage your bookings, profile, and preferences for Mudumalai Tiger Reserve accommodations and activities" />
-      </Helmet>
-      <div className="min-h-screen bg-background">
-        <Header />
-
-        <main className="pt-[88px]">
-          <div className="bg-gradient-to-br from-primary/5 via-accent/5 to-success/5 border-b border-border py-8 md:py-12">
-            <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+    <div className="min-h-screen bg-[#0D1A0D]" data-testid="user-dashboard">
+      <Header />
+      
+      <main className="pt-[88px] px-4 pb-12">
+        <div className="max-w-6xl mx-auto">
+          {/* User Profile Header */}
+          <div className="bg-gradient-to-r from-[#2D5016] to-[#4A7C2E] rounded-2xl p-6 md:p-8 mb-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-white">
+                    {user?.full_name?.charAt(0) || 'U'}
+                  </span>
+                </div>
                 <div>
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-foreground mb-2">
-                    Welcome back, {userData?.fullName?.split(' ')?.[0]}!
-                  </h1>
-                  <p className="text-base md:text-lg text-muted-foreground">
-                    Manage your bookings and account settings
-                  </p>
+                  <h1 className="font-heading font-bold text-2xl text-white">{user?.full_name || 'Guest'}</h1>
+                  <p className="text-white/70">{user?.email}</p>
+                  <p className="text-white/50 text-sm">Member since {user?.member_since ? formatDate(user.member_since) : 'Recently'}</p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Member Since</p>
-                    <p className="text-base font-medium text-foreground">
-                      {new Date(userData.memberSince)?.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
-                    </p>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-white transition-colors"
+              >
+                <Icon name="LogOut" size={18} /> Logout
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {[
+              { label: 'Total Bookings', value: stats.totalBookings, icon: 'Calendar', color: '#4A7C2E' },
+              { label: 'Upcoming', value: stats.upcoming, icon: 'Clock', color: '#FF8C5A' },
+              { label: 'Completed', value: stats.completed, icon: 'CheckCircle', color: '#22C55E' },
+              { label: 'Total Spent', value: `₹${stats.totalSpent.toLocaleString()}`, icon: 'Wallet', color: '#A0522D' }
+            ].map((stat, idx) => (
+              <div key={idx} className="bg-[#152415] rounded-xl p-4 border border-[#4A7C2E]/30">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${stat.color}20` }}>
+                    <Icon name={stat.icon} size={20} style={{ color: stat.color }} />
                   </div>
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Icon name="User" size={32} strokeWidth={2} color="var(--color-primary)" />
+                </div>
+                <p className="text-2xl font-bold text-white">{stat.value}</p>
+                <p className="text-xs text-[#9CA38B]">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            {[
+              { id: 'bookings', label: 'My Bookings', icon: 'Calendar' },
+              { id: 'profile', label: 'Profile', icon: 'User' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap ${
+                  activeTab === tab.id 
+                    ? 'bg-[#4A7C2E] text-white' 
+                    : 'bg-[#152415] text-[#9CA38B] hover:bg-[#1E2E1E]'
+                }`}
+              >
+                <Icon name={tab.icon} size={18} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Bookings Tab */}
+          {activeTab === 'bookings' && (
+            <div className="space-y-4">
+              {loadingBookings ? (
+                <div className="text-center py-12">
+                  <Icon name="Loader2" size={32} className="text-[#4A7C2E] animate-spin mx-auto mb-4" />
+                  <p className="text-[#9CA38B]">Loading your bookings...</p>
+                </div>
+              ) : bookings.length === 0 ? (
+                <div className="text-center py-12 bg-[#152415] rounded-2xl border border-[#4A7C2E]/30">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-[#4A7C2E]/20 rounded-full flex items-center justify-center">
+                    <Icon name="Calendar" size={36} className="text-[#4A7C2E]/50" />
                   </div>
+                  <h3 className="font-heading font-semibold text-xl text-white mb-2">No Bookings Yet</h3>
+                  <p className="text-[#9CA38B] mb-6">Start planning your wildlife adventure today!</p>
+                  <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-[#4A7C2E] to-[#2D5016]">
+                    <Icon name="Search" size={18} /> Explore Accommodations
+                  </Button>
+                </div>
+              ) : (
+                bookings.map((booking, idx) => (
+                  <div 
+                    key={booking.id || idx}
+                    className="bg-[#152415] rounded-xl p-5 border border-[#4A7C2E]/30"
+                    data-testid={`booking-card-${idx}`}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          booking.booking_type === 'accommodation' ? 'bg-[#4A7C2E]/20' :
+                          booking.booking_type === 'activity' ? 'bg-[#FF8C5A]/20' : 'bg-[#A0522D]/20'
+                        }`}>
+                          <Icon 
+                            name={booking.booking_type === 'accommodation' ? 'Home' : booking.booking_type === 'activity' ? 'Compass' : 'ShoppingBag'} 
+                            size={24} 
+                            className={
+                              booking.booking_type === 'accommodation' ? 'text-[#4A7C2E]' :
+                              booking.booking_type === 'activity' ? 'text-[#FF8C5A]' : 'text-[#A0522D]'
+                            }
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-heading font-semibold text-white text-lg">{booking.item_name}</h3>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}>
+                              {booking.status}
+                            </span>
+                          </div>
+                          <p className="text-[#9CA38B] text-sm mb-2">Ref: {booking.booking_reference}</p>
+                          <div className="flex flex-wrap gap-4 text-sm text-[#9CA38B]">
+                            {booking.check_in_date && (
+                              <span className="flex items-center gap-1">
+                                <Icon name="Calendar" size={14} className="text-[#4A7C2E]" />
+                                {formatDate(booking.check_in_date)}
+                                {booking.check_out_date && booking.check_out_date !== booking.check_in_date && (
+                                  <> - {formatDate(booking.check_out_date)}</>
+                                )}
+                              </span>
+                            )}
+                            {booking.guests_count && (
+                              <span className="flex items-center gap-1">
+                                <Icon name="Users" size={14} className="text-[#FF8C5A]" />
+                                {booking.guests_count} Guests
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-[#4A7C2E]">₹{booking.amount?.toLocaleString()}</p>
+                        <p className={`text-xs ${booking.payment_status === 'paid' ? 'text-green-400' : 'text-amber-400'}`}>
+                          {booking.payment_status === 'paid' ? '✓ Paid' : 'Pending Payment'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <div className="bg-[#152415] rounded-2xl p-6 border border-[#4A7C2E]/30">
+              <h2 className="font-heading font-semibold text-xl text-white mb-6">Profile Information</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-[#9CA38B] mb-2">Full Name</label>
+                  <p className="text-white">{user?.full_name || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#9CA38B] mb-2">Email</label>
+                  <p className="text-white">{user?.email || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#9CA38B] mb-2">Phone</label>
+                  <p className="text-white">{user?.phone || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#9CA38B] mb-2">User ID</label>
+                  <p className="text-white font-mono">{user?.user_id || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#9CA38B] mb-2">Member Since</label>
+                  <p className="text-white">{user?.member_since ? formatDate(user.member_since) : '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#9CA38B] mb-2">Account Status</label>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${user?.is_verified ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                    {user?.is_verified ? 'Verified' : 'Pending Verification'}
+                  </span>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                <StatsCard
-                  icon="Calendar"
-                  label="Total Bookings"
-                  value={userData?.totalBookings}
-                  variant="primary"
-                  trend={null}
-                  trendValue={null} />
-
-                <StatsCard
-                  icon="Clock"
-                  label="Upcoming Bookings"
-                  value={userData?.upcomingBookings}
-                  variant="accent"
-                  trend="up"
-                  trendValue="+2" />
-
-                <StatsCard
-                  icon="CheckCircle"
-                  label="Completed Bookings"
-                  value={userData?.completedBookings}
-                  variant="success"
-                  trend={null}
-                  trendValue={null} />
-
-              </div>
             </div>
-          </div>
-
-          <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <QuickActionCard
-                icon="Plus"
-                title="New Booking"
-                description="Book accommodation or activities"
-                actionLabel="Book Now"
-                onClick={() => navigate('/interactive-map-booking')}
-                variant="primary" />
-
-              <QuickActionCard
-                icon="ShoppingBag"
-                title="E-Shop"
-                description="Browse souvenirs and gifts"
-                actionLabel="Shop Now"
-                onClick={() => navigate('/e-shop')}
-                variant="accent" />
-
-              <QuickActionCard
-                icon="Download"
-                title="Download PDFs"
-                description="Access booking confirmations"
-                actionLabel="View All"
-                onClick={() => console.log('Download PDFs')} />
-
-              <QuickActionCard
-                icon="Award"
-                title="Certificates"
-                description="View educational certificates"
-                actionLabel="View All"
-                onClick={() => console.log('View certificates')}
-                variant="success" />
-
-            </div>
-
-            <div className="bg-card border border-border rounded-xl overflow-hidden mb-8">
-              <div className="border-b border-border overflow-x-auto">
-                <div className="flex">
-                  {tabs?.map((tab) =>
-                  <button
-                    key={tab?.id}
-                    onClick={() => setActiveTab(tab?.id)}
-                    className={`flex items-center gap-2 px-6 py-4 font-medium transition-organic whitespace-nowrap ${
-                    activeTab === tab?.id ?
-                    'text-primary border-b-2 border-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`
-                    }>
-
-                      <Icon name={tab?.icon} size={20} strokeWidth={2} />
-                      <span>{tab?.label}</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-4 md:p-6 lg:p-8">
-                {activeTab === 'bookings' && renderBookings()}
-                {activeTab === 'profile' &&
-                <ProfileSection userData={userData} onUpdate={handleUpdateProfile} />
-                }
-                {activeTab === 'preferences' &&
-                <PreferencesSection preferences={preferences} onUpdate={handleUpdatePreferences} />
-                }
-                {activeTab === 'adoptions' && renderAdoptions()}
-              </div>
-            </div>
-          </div>
-        </main>
-
-        <footer className="bg-card border-t border-border py-8">
-          <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground text-center md:text-left">
-                &copy; {new Date()?.getFullYear()} MTR BookingHub. All rights reserved.
-              </p>
-              <div className="flex items-center gap-6">
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-organic">
-                  Privacy Policy
-                </a>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-organic">
-                  Terms of Service
-                </a>
-                <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-organic">
-                  Contact Support
-                </a>
-              </div>
-            </div>
-          </div>
-        </footer>
-      </div>
-    </>);
-
+          )}
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default UserDashboard;

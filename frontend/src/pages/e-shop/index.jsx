@@ -9,15 +9,27 @@ import FeaturedCarousel from './components/FeaturedCarousel';
 import QuickViewModal from './components/QuickViewModal';
 import SearchBar from './components/SearchBar';
 import MobileFilterDrawer from './components/MobileFilterDrawer';
+import { useCart } from '../../contexts/CartContext';
+
+// Simple toast notification
+const showToast = (message, type = 'success') => {
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all transform ${
+    type === 'success' ? 'bg-green-600 text-white' : type === 'error' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+};
 
 const EShop = () => {
   const navigate = useNavigate();
+  const { addToCart, getCartCount } = useCart();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
 
   const categories = [
   { id: 'apparel', name: 'Apparel', icon: 'Shirt', count: 24 },
@@ -368,18 +380,25 @@ const EShop = () => {
     return filtered;
   }, [selectedCategory, searchQuery, sortBy]);
 
-  const handleAddToCart = (product) => {
-    setCartItems((prev) => [...prev, product]);
-
-    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
-    existingCart?.push({
-      id: product?.id,
-      name: product?.name,
-      price: product?.price,
-      quantity: product?.quantity || 1,
-      type: 'product'
-    });
-    localStorage.setItem('cart', JSON.stringify(existingCart));
+  const handleAddToCart = async (product) => {
+    try {
+      await addToCart({
+        type: 'product',
+        id: product?.id,
+        name: product?.name,
+        price: product?.price,
+        quantity: product?.quantity || 1,
+        totalPrice: product?.price * (product?.quantity || 1),
+        details: {
+          image: product?.image,
+          category: product?.category,
+          description: product?.description
+        }
+      });
+      showToast(`${product?.name} added to cart!`);
+    } catch (error) {
+      showToast('Failed to add item to cart', 'error');
+    }
   };
 
   const handleCategoryChange = (categoryId) => {

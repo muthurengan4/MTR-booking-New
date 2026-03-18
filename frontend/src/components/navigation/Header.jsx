@@ -2,14 +2,17 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Image from '../AppImage';
+import { useCart } from '../../contexts/CartContext';
+import { useUserAuth } from '../../contexts/UserAuthContext';
 
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { getCartCount } = useCart();
+  const { user, isAuthenticated } = useUserAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cartItemCount] = useState(3);
-  const [isAuthenticated] = useState(false);
+  const cartItemCount = getCartCount();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   const navigationItems = [
