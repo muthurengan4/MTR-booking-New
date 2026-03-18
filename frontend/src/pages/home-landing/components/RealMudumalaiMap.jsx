@@ -3,10 +3,24 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'rea
 import L from 'leaflet';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import api from '../../../lib/api';
 import 'leaflet/dist/leaflet.css';
 
-// Custom marker icons for different accommodation types
-const createCustomIcon = (color, iconType) => {
+// Custom marker icons with availability status colors
+const createCustomIcon = (baseColor, iconType, availabilityStatus) => {
+  // Determine color based on availability
+  let color = baseColor;
+  let statusIndicator = '';
+  
+  if (availabilityStatus === 'fully_booked') {
+    color = '#6B7280'; // Gray for unavailable
+    statusIndicator = `<circle cx="32" cy="8" r="6" fill="#EF4444" stroke="white" stroke-width="2"/>`;
+  } else if (availabilityStatus === 'limited') {
+    statusIndicator = `<circle cx="32" cy="8" r="6" fill="#F59E0B" stroke="white" stroke-width="2"/>`;
+  } else if (availabilityStatus === 'available') {
+    statusIndicator = `<circle cx="32" cy="8" r="6" fill="#10B981" stroke="white" stroke-width="2"/>`;
+  }
+
   const iconSvg = {
     suite: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>`,
     cottage: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
@@ -26,6 +40,7 @@ const createCustomIcon = (color, iconType) => {
       <path d="M20 0 C9 0 0 9 0 20 C0 35 20 50 20 50 C20 50 40 35 40 20 C40 9 31 0 20 0 Z" fill="${color}" filter="url(#shadow)"/>
       <circle cx="20" cy="18" r="12" fill="white" fill-opacity="0.2"/>
       <g transform="translate(8, 6) scale(0.5)">${iconSvg[iconType] || iconSvg.room}</g>
+      ${statusIndicator}
     </svg>
   `;
 
@@ -52,9 +67,11 @@ const MapBoundsFitter = ({ locations, activeRegion }) => {
   return null;
 };
 
-const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
+const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [activeRegion, setActiveRegion] = useState('all');
+  const [availability, setAvailability] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Region data with colors
   const regions = {
@@ -128,9 +145,52 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
     { id: 'vaigai', name: 'Vaigai', region: 'genepool', coords: { lat: 11.46666256239003, lng: 76.41524319979213 }, type: 'room', price: 3200, capacity: 2, amenities: ['AC', 'WiFi'], image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400', description: 'River-themed room' },
   ];
 
+  // Fetch availability when bookingParams changes
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (bookingParams?.checkInDate && bookingParams?.checkOutDate) {
+        setIsLoading(true);
+        try {
+          const response = await api.post('/api/check-availability', {
+            check_in_date: bookingParams.checkInDate,
+            check_out_date: bookingParams.checkOutDate,
+            guests: bookingParams.guests || 2,
+            booking_type: bookingParams.bookingType || 'both'
+          });
+          setAvailability(response.data);
+        } catch (error) {
+          console.error('Failed to fetch availability:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    fetchAvailability();
+  }, [bookingParams]);
+
+  // Get availability status for a location
+  const getLocationAvailability = (locationId) => {
+    if (!availability) return null;
+    return availability.locations?.find(loc => loc.location_id === locationId);
+  };
+
   const filteredLocations = activeRegion === 'all' 
     ? locations 
     : locations.filter(loc => loc.region === activeRegion);
+
+  // Count available locations per region
+  const getRegionStats = (regionKey) => {
+    const regionLocations = locations.filter(l => l.region === regionKey);
+    if (!availability) {
+      return { total: regionLocations.length, available: regionLocations.length };
+    }
+    const available = regionLocations.filter(loc => {
+      const avail = getLocationAvailability(loc.id);
+      return avail?.is_available;
+    }).length;
+    return { total: regionLocations.length, available };
+  };
 
   const handleMarkerClick = (location) => {
     setSelectedLocation(location);
@@ -157,6 +217,34 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
     return labels[type] || 'Accommodation';
   };
 
+  const getAvailabilityBadge = (locationId) => {
+    const avail = getLocationAvailability(locationId);
+    if (!avail) return null;
+    
+    if (avail.availability_status === 'available') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+          Available
+        </span>
+      );
+    } else if (avail.availability_status === 'limited') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+          Limited
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+          Fully Booked
+        </span>
+      );
+    }
+  };
+
   // Map center - Mudumalai Tiger Reserve
   const mapCenter = [11.5650, 76.5500];
 
@@ -165,6 +253,15 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
       {/* Region Filter Sidebar */}
       <div className="lg:col-span-1 space-y-3">
         <h4 className="font-heading font-semibold text-[#4A7C2E] mb-4">Filter by Region</h4>
+        
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex items-center gap-2 text-sm text-[#9CA38B] mb-3">
+            <div className="w-4 h-4 border-2 border-[#4A7C2E] border-t-transparent rounded-full animate-spin" />
+            Checking availability...
+          </div>
+        )}
+        
         <button
           onClick={() => setActiveRegion('all')}
           className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${
@@ -178,36 +275,66 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
           <span className="ml-auto text-sm opacity-75">{locations.length}</span>
         </button>
         
-        {Object.entries(regions).map(([key, region]) => (
-          <button
-            key={key}
-            onClick={() => setActiveRegion(key)}
-            className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${
-              activeRegion === key 
-                ? 'text-white shadow-lg' 
-                : 'bg-[#152415] hover:bg-[#1E2E1E] border'
-            }`}
-            style={{
-              backgroundColor: activeRegion === key ? region.color : undefined,
-              borderColor: activeRegion === key ? region.color : 'rgba(74, 124, 46, 0.2)',
-              boxShadow: activeRegion === key ? `0 10px 25px ${region.color}40` : undefined
-            }}
-          >
-            <div 
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: activeRegion === key ? 'white' : region.color }}
-            />
-            <span className="font-medium" style={{ color: activeRegion === key ? 'white' : region.color }}>
-              {region.name}
-            </span>
-            <span className="ml-auto text-sm opacity-75" style={{ color: activeRegion === key ? 'white' : '#9CA38B' }}>
-              {locations.filter(l => l.region === key).length}
-            </span>
-          </button>
-        ))}
+        {Object.entries(regions).map(([key, region]) => {
+          const stats = getRegionStats(key);
+          return (
+            <button
+              key={key}
+              onClick={() => setActiveRegion(key)}
+              className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${
+                activeRegion === key 
+                  ? 'text-white shadow-lg' 
+                  : 'bg-[#152415] hover:bg-[#1E2E1E] border'
+              }`}
+              style={{
+                backgroundColor: activeRegion === key ? region.color : undefined,
+                borderColor: activeRegion === key ? region.color : 'rgba(74, 124, 46, 0.2)',
+                boxShadow: activeRegion === key ? `0 10px 25px ${region.color}40` : undefined
+              }}
+            >
+              <div 
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: activeRegion === key ? 'white' : region.color }}
+              />
+              <span className="font-medium" style={{ color: activeRegion === key ? 'white' : region.color }}>
+                {region.name}
+              </span>
+              <span className="ml-auto text-sm opacity-75" style={{ color: activeRegion === key ? 'white' : '#9CA38B' }}>
+                {availability ? `${stats.available}/${stats.total}` : stats.total}
+              </span>
+            </button>
+          );
+        })}
+
+        {/* Availability Legend */}
+        {bookingParams && (
+          <div className="mt-6 p-4 bg-[#152415] rounded-xl border border-[#4A7C2E]/20">
+            <p className="text-xs font-semibold text-[#4A7C2E] mb-3">Availability Status</p>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                </div>
+                <span className="text-green-400">Available</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                </div>
+                <span className="text-amber-400">Limited Availability</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                </div>
+                <span className="text-red-400">Fully Booked</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Map Legend */}
-        <div className="mt-6 p-4 bg-[#152415] rounded-xl border border-[#4A7C2E]/20">
+        <div className="mt-4 p-4 bg-[#152415] rounded-xl border border-[#4A7C2E]/20">
           <p className="text-xs font-semibold text-[#4A7C2E] mb-3">Accommodation Types</p>
           <div className="space-y-2 text-xs">
             {[
@@ -251,39 +378,51 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
             
             <MapBoundsFitter locations={filteredLocations} activeRegion={activeRegion} />
 
-            {filteredLocations.map((location) => (
-              <Marker
-                key={location.id}
-                position={[location.coords.lat, location.coords.lng]}
-                icon={createCustomIcon(regions[location.region]?.color || '#4A7C2E', location.type)}
-                eventHandlers={{
-                  click: () => handleMarkerClick(location)
-                }}
-              >
-                <Popup className="custom-popup">
-                  <div className="min-w-[200px]">
-                    <img 
-                      src={location.image} 
-                      alt={location.name}
-                      className="w-full h-24 object-cover rounded-t-lg -mt-3 -mx-3 mb-2"
-                      style={{ width: 'calc(100% + 24px)' }}
-                    />
-                    <h4 className="font-bold text-[#4A7C2E] text-sm">{location.name}</h4>
-                    <p className="text-xs text-[#9CA38B] mb-2">{location.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#9CA38B]">{getTypeLabel(location.type)}</span>
-                      <span className="font-bold text-[#FF8C5A]">₹{location.price.toLocaleString()}</span>
+            {filteredLocations.map((location) => {
+              const avail = getLocationAvailability(location.id);
+              return (
+                <Marker
+                  key={location.id}
+                  position={[location.coords.lat, location.coords.lng]}
+                  icon={createCustomIcon(
+                    regions[location.region]?.color || '#4A7C2E', 
+                    location.type,
+                    avail?.availability_status
+                  )}
+                  eventHandlers={{
+                    click: () => handleMarkerClick(location)
+                  }}
+                >
+                  <Popup className="custom-popup">
+                    <div className="min-w-[200px]">
+                      <img 
+                        src={location.image} 
+                        alt={location.name}
+                        className="w-full h-24 object-cover rounded-t-lg -mt-3 -mx-3 mb-2"
+                        style={{ width: 'calc(100% + 24px)' }}
+                      />
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-bold text-[#4A7C2E] text-sm">{location.name}</h4>
+                        {getAvailabilityBadge(location.id)}
+                      </div>
+                      <p className="text-xs text-[#9CA38B] mb-2">{location.description}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#9CA38B]">{getTypeLabel(location.type)}</span>
+                        <span className="font-bold text-[#FF8C5A]">₹{location.price.toLocaleString()}</span>
+                      </div>
                     </div>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
 
           {/* Map Title Overlay */}
           <div className="absolute top-4 left-4 bg-[#152415]/95 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg shadow-black/30 z-[1000] border border-[#4A7C2E]/30">
             <h4 className="font-heading font-bold text-[#4A7C2E] text-sm">Mudumalai Tiger Reserve</h4>
-            <p className="text-xs text-[#9CA38B]">Interactive Accommodation Map</p>
+            <p className="text-xs text-[#9CA38B]">
+              {bookingParams ? 'Real-time Availability Map' : 'Interactive Accommodation Map'}
+            </p>
           </div>
 
           {/* Location Count Badge */}
@@ -291,6 +430,20 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
             <Icon name="MapPin" size={16} />
             <span className="text-sm font-medium">{filteredLocations.length} Locations</span>
           </div>
+          
+          {/* Safari Availability Badge */}
+          {availability && bookingParams?.bookingType !== 'rooms' && (
+            <div className={`absolute bottom-4 right-4 rounded-full px-4 py-2 shadow-lg z-[1000] flex items-center gap-2 ${
+              availability.safari_available 
+                ? 'bg-gradient-to-r from-green-600 to-green-700 text-white' 
+                : 'bg-gradient-to-r from-red-600 to-red-700 text-white'
+            }`}>
+              <Icon name="Binoculars" size={16} />
+              <span className="text-sm font-medium">
+                Safari: {availability.safari_available ? `${availability.safari_slots} slots` : 'Fully Booked'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -306,12 +459,15 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0D1A0D] via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 right-3">
-                <span 
-                  className="inline-block px-2 py-1 rounded-full text-white text-xs font-medium mb-1 shadow-lg"
-                  style={{ backgroundColor: regions[selectedLocation.region]?.color }}
-                >
-                  {regions[selectedLocation.region]?.name}
-                </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span 
+                    className="inline-block px-2 py-1 rounded-full text-white text-xs font-medium shadow-lg"
+                    style={{ backgroundColor: regions[selectedLocation.region]?.color }}
+                  >
+                    {regions[selectedLocation.region]?.name}
+                  </span>
+                  {getAvailabilityBadge(selectedLocation.id)}
+                </div>
                 <h4 className="font-heading font-bold text-white text-lg leading-tight drop-shadow-lg">{selectedLocation.name}</h4>
               </div>
             </div>
@@ -326,6 +482,37 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
                   <p className="text-xs text-[#9CA38B]">per night</p>
                 </div>
               </div>
+
+              {/* Show booking details if available */}
+              {bookingParams && availability && (
+                <div className="p-3 bg-[#0D1A0D] rounded-xl border border-[#4A7C2E]/20">
+                  <p className="text-xs font-semibold text-[#4A7C2E] mb-2">Your Selection</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-[#9CA38B]">
+                    <div>
+                      <Icon name="Calendar" size={12} className="inline mr-1 text-[#4A7C2E]" />
+                      {bookingParams.checkInDate}
+                    </div>
+                    <div>
+                      <Icon name="Calendar" size={12} className="inline mr-1 text-[#FF8C5A]" />
+                      {bookingParams.checkOutDate}
+                    </div>
+                    <div>
+                      <Icon name="Users" size={12} className="inline mr-1 text-[#4A7C2E]" />
+                      {bookingParams.guests} Guests
+                    </div>
+                    <div>
+                      <Icon name="Moon" size={12} className="inline mr-1 text-[#4A7C2E]" />
+                      {availability.total_nights} Nights
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-[#4A7C2E]/20 flex justify-between items-center">
+                    <span className="text-xs text-[#9CA38B]">Total Estimate</span>
+                    <span className="font-bold text-[#FF8C5A]">
+                      ₹{(selectedLocation.price * availability.total_nights).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 text-sm text-[#9CA38B]">
                 <Icon name="Users" size={16} className="text-[#4A7C2E]" />
@@ -350,14 +537,23 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
                 </p>
               </div>
 
-              <Button 
-                onClick={handleBookNow}
-                className="w-full bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF8C5A] shadow-lg shadow-[#FF8C5A]/30"
-                data-testid="book-location-btn"
-              >
-                <Icon name="Calendar" size={18} />
-                Book This Stay
-              </Button>
+              {(() => {
+                const avail = getLocationAvailability(selectedLocation.id);
+                const isBookable = !avail || avail.is_available;
+                return (
+                  <Button 
+                    onClick={handleBookNow}
+                    disabled={!isBookable}
+                    className={`w-full ${isBookable 
+                      ? 'bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF8C5A] shadow-lg shadow-[#FF8C5A]/30' 
+                      : 'bg-gray-600 cursor-not-allowed opacity-50'}`}
+                    data-testid="book-location-btn"
+                  >
+                    <Icon name={isBookable ? "Calendar" : "XCircle"} size={18} />
+                    {isBookable ? 'Book This Stay' : 'Not Available'}
+                  </Button>
+                );
+              })()}
 
               <a 
                 href={`https://www.google.com/maps?q=${selectedLocation.coords.lat},${selectedLocation.coords.lng}`}
@@ -379,6 +575,12 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow }) => {
             <p className="text-sm text-[#9CA38B]">
               Click on any marker on the map to view accommodation details and book your stay
             </p>
+            {bookingParams && (
+              <p className="text-xs text-[#FF8C5A] mt-3">
+                <Icon name="Info" size={12} className="inline mr-1" />
+                Green markers show available accommodations
+              </p>
+            )}
           </div>
         )}
       </div>

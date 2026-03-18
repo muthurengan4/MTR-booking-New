@@ -344,6 +344,33 @@ class AnalyticsResponse(BaseModel):
     bookings_by_status: dict
     recent_bookings: List[dict]
 
+class AvailabilityCheckRequest(BaseModel):
+    check_in_date: str
+    check_out_date: str
+    guests: int = 2
+    booking_type: str = "both"  # rooms, safari, both
+
+class LocationAvailability(BaseModel):
+    location_id: str
+    name: str
+    region: str
+    is_available: bool
+    availability_status: str  # available, limited, fully_booked
+    available_units: int
+    total_units: int
+    price_per_night: float
+    blocked_dates: List[str] = []
+
+class AvailabilityCheckResponse(BaseModel):
+    check_in_date: str
+    check_out_date: str
+    guests: int
+    booking_type: str
+    total_nights: int
+    locations: List[LocationAvailability]
+    safari_available: bool
+    safari_slots: int
+
 # ==================== HELPER FUNCTIONS ====================
 
 def get_db():
@@ -732,6 +759,135 @@ def cancel_booking(booking_id: str, reason: str = "", db: Session = Depends(get_
     db.commit()
     
     return {"success": True, "message": "Booking cancelled", "refund_amount": refund_amount}
+
+# Availability Check Endpoint
+@app.post("/api/check-availability", response_model=AvailabilityCheckResponse)
+def check_availability(request: AvailabilityCheckRequest, db: Session = Depends(get_db)):
+    """
+    Check availability for accommodations and safari based on date range and booking type.
+    Returns availability status for all locations with visual indicators.
+    """
+    try:
+        check_in = datetime.strptime(request.check_in_date, "%Y-%m-%d").date()
+        check_out = datetime.strptime(request.check_out_date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    if check_out <= check_in:
+        raise HTTPException(status_code=400, detail="Check-out date must be after check-in date")
+    
+    total_nights = (check_out - check_in).days
+    
+    # Define all accommodation locations from the KML data
+    all_locations = [
+        # Theppakadu region
+        {"id": "tiger-tusker", "name": "Tiger & Tusker Suite", "region": "theppakadu", "price": 8500, "total_units": 2, "capacity": 4},
+        {"id": "theppakadu-dorm", "name": "Theppakadu Dormitory", "region": "theppakadu", "price": 800, "total_units": 5, "capacity": 6},
+        {"id": "theppakadu-log", "name": "Theppakadu Log House", "region": "theppakadu", "price": 4500, "total_units": 3, "capacity": 3},
+        {"id": "minivet-dorm", "name": "Minivet Dormitory", "region": "theppakadu", "price": 800, "total_units": 2, "capacity": 8},
+        {"id": "sylvan-log", "name": "Sylvan Lodge", "region": "theppakadu", "price": 5200, "total_units": 5, "capacity": 4},
+        # Kargudi region
+        {"id": "peacock-dorm", "name": "Peacock Dormitory", "region": "kargudi", "price": 700, "total_units": 1, "capacity": 10},
+        {"id": "cuckoo-frh", "name": "Cuckoo Forest Rest House", "region": "kargudi", "price": 3500, "total_units": 1, "capacity": 2},
+        # Abhayaranyam region
+        {"id": "dhole-sambar", "name": "Dhole Sambar Chital", "region": "abhayaranyam", "price": 4200, "total_units": 1, "capacity": 3},
+        {"id": "abhayaranyam-annexe", "name": "Abhayaranyam Annexe 1 & 2", "region": "abhayaranyam", "price": 3800, "total_units": 2, "capacity": 2},
+        # Masinagudi region
+        {"id": "maravakandi", "name": "Maravakandi View 1 & 2", "region": "masinagudi", "price": 6500, "total_units": 2, "capacity": 4},
+        {"id": "masinagudi-rh", "name": "Masinagudi Rest House", "region": "masinagudi", "price": 4500, "total_units": 1, "capacity": 2},
+        {"id": "masinagudi-log", "name": "Masinagudi Log House", "region": "masinagudi", "price": 5500, "total_units": 1, "capacity": 3},
+        {"id": "trekking-shed", "name": "Trekking Shed 1 & 2", "region": "masinagudi", "price": 600, "total_units": 2, "capacity": 8},
+        # Genepool region
+        {"id": "amaravathy", "name": "Amaravathy", "region": "genepool", "price": 3200, "total_units": 1, "capacity": 2},
+        {"id": "mayor", "name": "Mayor", "region": "genepool", "price": 3200, "total_units": 1, "capacity": 2},
+        {"id": "bhavani", "name": "Bhavani", "region": "genepool", "price": 3200, "total_units": 1, "capacity": 2},
+        {"id": "hornbill", "name": "Hornbill", "region": "genepool", "price": 3800, "total_units": 1, "capacity": 2},
+        {"id": "panther", "name": "Panther", "region": "genepool", "price": 4000, "total_units": 1, "capacity": 2},
+        {"id": "nilgiri-tahr-1", "name": "Nilgiri Tahr 1", "region": "genepool", "price": 3500, "total_units": 1, "capacity": 2},
+        {"id": "nilgiri-tahr-2", "name": "Nilgiri Tahr 2", "region": "genepool", "price": 3500, "total_units": 1, "capacity": 2},
+        {"id": "rosewood-1", "name": "Rosewood 1", "region": "genepool", "price": 3500, "total_units": 1, "capacity": 2},
+        {"id": "rosewood-2", "name": "Rosewood 2", "region": "genepool", "price": 3500, "total_units": 1, "capacity": 2},
+        {"id": "trekking-shed-gp", "name": "Genepool Trekking Shed", "region": "genepool", "price": 500, "total_units": 1, "capacity": 10},
+        {"id": "thamirabarani", "name": "Thamirabarani", "region": "genepool", "price": 3200, "total_units": 1, "capacity": 2},
+        {"id": "vaigai", "name": "Vaigai", "region": "genepool", "price": 3200, "total_units": 1, "capacity": 2},
+    ]
+    
+    locations_availability = []
+    
+    for loc in all_locations:
+        # Check for blocked dates
+        blocked_dates_query = db.query(RoomBlockedDate).filter(
+            RoomBlockedDate.location == loc["id"],
+            RoomBlockedDate.blocked_date >= check_in,
+            RoomBlockedDate.blocked_date < check_out
+        ).all()
+        blocked_dates = [str(bd.blocked_date) for bd in blocked_dates_query]
+        
+        # Check existing bookings for this location
+        existing_bookings = db.query(Booking).filter(
+            Booking.item_id == loc["id"],
+            Booking.status.in_(["confirmed", "pending"]),
+            Booking.check_in_date < check_out,
+            Booking.check_out_date > check_in
+        ).count()
+        
+        available_units = max(0, loc["total_units"] - existing_bookings)
+        
+        # Check if capacity meets guest requirements
+        capacity_ok = loc["capacity"] >= request.guests
+        
+        # Determine availability status
+        if len(blocked_dates) > 0:
+            availability_status = "fully_booked"
+            is_available = False
+        elif available_units == 0:
+            availability_status = "fully_booked"
+            is_available = False
+        elif not capacity_ok:
+            availability_status = "limited"
+            is_available = False
+        elif available_units < loc["total_units"]:
+            availability_status = "limited"
+            is_available = True
+        else:
+            availability_status = "available"
+            is_available = True
+        
+        locations_availability.append(LocationAvailability(
+            location_id=loc["id"],
+            name=loc["name"],
+            region=loc["region"],
+            is_available=is_available,
+            availability_status=availability_status,
+            available_units=available_units,
+            total_units=loc["total_units"],
+            price_per_night=float(loc["price"]),
+            blocked_dates=blocked_dates
+        ))
+    
+    # Check safari availability (simplified - assuming 20 slots per day)
+    safari_slots = 20
+    for day_offset in range(total_nights):
+        date = check_in + timedelta(days=day_offset)
+        safari_bookings = db.query(Booking).filter(
+            Booking.booking_type == "activity",
+            Booking.booking_date == date,
+            Booking.status.in_(["confirmed", "pending"])
+        ).count()
+        safari_slots = min(safari_slots, 20 - safari_bookings)
+    
+    safari_available = safari_slots >= request.guests if request.booking_type in ["safari", "both"] else True
+    
+    return AvailabilityCheckResponse(
+        check_in_date=request.check_in_date,
+        check_out_date=request.check_out_date,
+        guests=request.guests,
+        booking_type=request.booking_type,
+        total_nights=total_nights,
+        locations=locations_availability,
+        safari_available=safari_available,
+        safari_slots=max(0, safari_slots)
+    )
 
 # Safari Routes Endpoints
 @app.get("/api/safari-routes", response_model=List[SafariRouteResponse])

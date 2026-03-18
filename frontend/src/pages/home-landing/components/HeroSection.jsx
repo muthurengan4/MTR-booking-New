@@ -2,7 +2,7 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import RealMudumalaiMap from './RealMudumalaiMap';
 
-const HeroSection = ({ onLocationClick, onBookNowClick }) => {
+const HeroSection = ({ onLocationClick, onBookNowClick, bookingParams }) => {
   const handleLocationSelect = (location) => {
     if (onLocationClick) {
       onLocationClick(location);
@@ -36,7 +36,11 @@ const HeroSection = ({ onLocationClick, onBookNowClick }) => {
           </h2>
           
           <p className="text-base md:text-lg text-[#9CA38B] max-w-2xl mx-auto mb-6">
-            Explore the real Mudumalai Tiger Reserve map to find authentic forest rest houses and accommodations
+            {bookingParams ? (
+              <>Showing availability for <span className="text-[#4A7C2E] font-semibold">{bookingParams.guests} guests</span> from <span className="text-[#FF8C5A] font-semibold">{bookingParams.checkInDate}</span> to <span className="text-[#FF8C5A] font-semibold">{bookingParams.checkOutDate}</span></>
+            ) : (
+              'Explore the real Mudumalai Tiger Reserve map to find authentic forest rest houses and accommodations'
+            )}
           </p>
 
           {/* Quick Stats */}
@@ -75,6 +79,7 @@ const HeroSection = ({ onLocationClick, onBookNowClick }) => {
         <RealMudumalaiMap 
           onLocationSelect={handleLocationSelect}
           onBookNow={handleBookNow}
+          bookingParams={bookingParams}
         />
 
         {/* Bottom CTA */}
