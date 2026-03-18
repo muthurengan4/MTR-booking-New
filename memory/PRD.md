@@ -23,12 +23,32 @@ Compile and build the existing codebase and change the tech stack from React + S
 8. ✅ GST calculation and financial tracking
 
 ## Tech Stack
-- **Frontend**: React 18 + Vite + TailwindCSS + Recharts
+- **Frontend**: React 18 + Vite + TailwindCSS + Recharts + Leaflet.js
 - **Backend**: FastAPI + SQLAlchemy + SQLite
 - **Authentication**: JWT-based custom auth
-- **Styling**: TailwindCSS with custom theme
+- **Styling**: TailwindCSS with custom dark naturalistic theme
+- **Maps**: Leaflet.js with OpenStreetMap tiles
 
-## What's Been Implemented (March 17, 2026)
+## What's Been Implemented
+
+### March 18, 2026 - Booking Widget Integration
+- ✅ Integrated booking widget directly into homepage hero carousel
+- ✅ Booking type selector (Rooms Only, Safari Only, Rooms + Safari)
+- ✅ Date pickers for check-in/check-out
+- ✅ Guest selector (1-10 guests)
+- ✅ "Check Availability" button scrolls to map section
+- ✅ "Book Stay" navigation link scrolls to homepage booking widget
+- ✅ Removed old /interactive-map-booking route
+- ✅ All features tested and verified (100% test pass rate)
+
+### March 17, 2026 - UI Enhancements & Interactive Map
+- ✅ Dark naturalistic theme with forest-inspired color palette
+- ✅ Custom header with gradient stripe
+- ✅ Auto-playing hero carousel with 6 wildlife images
+- ✅ Interactive Leaflet map with OpenStreetMap
+- ✅ 25 real accommodation locations from KML file
+- ✅ Region filtering (Theppakadu, Kargudi, Abhayaranyam, Masinagudi, Genepool)
+- ✅ Custom map markers with popup details
 
 ### Backend (FastAPI)
 - ✅ Complete REST API with 15+ endpoints
@@ -44,7 +64,8 @@ Compile and build the existing codebase and change the tech stack from React + S
 - ✅ GST calculation (12%)
 
 ### Frontend (React)
-- ✅ Home landing page with booking options
+- ✅ Home landing page with integrated booking widget
+- ✅ Interactive Leaflet map with real GPS locations
 - ✅ Admin login page with JWT auth
 - ✅ Admin dashboard with multiple tabs
 - ✅ Room type management UI
@@ -87,22 +108,25 @@ Compile and build the existing codebase and change the tech stack from React + S
 | POST | /api/init-db | Initialize/seed database |
 
 ## Admin Credentials
-- **Username**: admin
-- **Password**: admin123
+- **Email**: admin@mtr.nic.in
+- **Password**: Admin@123
 
 ## Prioritized Backlog
 
 ### P0 (Critical)
-- [ ] Migrate from SQLite to MongoDB for Emergent deployment compatibility
-- [ ] Fix external preview URL routing
+- ✅ Booking widget integration into homepage (COMPLETED)
+- ✅ Remove old booking page (COMPLETED)
+- [ ] Connect booking widget to backend availability API
 
 ### P1 (High Priority)
+- [ ] Complete booking flow - link map selections to booking confirmation
 - [ ] Add pagination to all list endpoints
 - [ ] Implement booking date blocking functionality
 - [ ] Add email/SMS notification integration
 - [ ] User registration and public booking flow
 
 ### P2 (Medium Priority)
+- [ ] Connect admin dashboard components to live backend (currently using mock data)
 - [ ] E-shop product management
 - [ ] Shopping cart functionality
 - [ ] User dashboard for booking history
@@ -117,10 +141,11 @@ Compile and build the existing codebase and change the tech stack from React + S
 ## Known Limitations
 1. **Database**: Using SQLite instead of MySQL/MongoDB (Emergent platform limitation)
 2. **Preview URL**: External preview may show unavailable due to platform routing
-3. **Pagination**: Not implemented on all endpoints (performance optimization needed)
+3. **Admin Dashboard**: Several components still use mock data instead of live API
+4. **Pagination**: Not implemented on all endpoints (performance optimization needed)
 
 ## Next Tasks
-1. Implement pagination on all list endpoints
-2. Add proper date blocking for rooms and activities
-3. Integrate with Emergent-managed Google Auth for public users
+1. Connect booking widget to backend availability check API
+2. Complete booking confirmation flow after user selects accommodation
+3. Connect admin dashboard components to live backend APIs
 4. Add email notification system using Resend/SendGrid
