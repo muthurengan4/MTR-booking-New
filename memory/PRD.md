@@ -31,6 +31,22 @@ Compile and build the existing codebase and change the tech stack from React + S
 
 ## What's Been Implemented
 
+### March 18, 2026 - Shopping Cart & Guest Checkout
+- ✅ Complete shopping cart redesign with dark theme
+- ✅ Backend APIs: User registration, login, cart CRUD, checkout
+- ✅ Guest checkout flow - no registration required before booking
+- ✅ Auto account creation during checkout with generated password
+- ✅ Guest info form with validation (name, email, phone)
+- ✅ Create account checkbox option (checked by default)
+- ✅ 3-step checkout process: Cart → Details → Payment → Confirmation
+- ✅ Order confirmation with Order ID and Booking References
+- ✅ Credentials display on confirmation page for new accounts
+- ✅ User Dashboard with login modal and booking history
+- ✅ Cart quantity update (increase/decrease/remove)
+- ✅ Cart context for state management across app
+- ✅ Header shows cart item count badge
+- ✅ All 17 backend tests passed, 12 frontend features verified
+
 ### March 18, 2026 - Safari Route Explorer Redesign
 - ✅ Completely redesigned Safari Route Explorer page
 - ✅ Interactive Leaflet map with real OpenStreetMap tiles
