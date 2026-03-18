@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { useCart } from '../../../contexts/CartContext';
 import api from '../../../lib/api';
 import 'leaflet/dist/leaflet.css';
+
+// Simple toast notification
+const showToast = (message, type = 'success') => {
+  const toastEl = document.createElement('div');
+  toastEl.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all transform ${
+    type === 'success' ? 'bg-green-600 text-white' : type === 'error' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'
+  }`;
+  toastEl.textContent = message;
+  document.body.appendChild(toastEl);
+  setTimeout(() => toastEl.remove(), 3000);
+};
 
 // Custom marker icons with availability status colors
 const createCustomIcon = (baseColor, iconType, availabilityStatus) => {
@@ -68,10 +81,18 @@ const MapBoundsFitter = ({ locations, activeRegion }) => {
 };
 
 const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
+  const navigate = useNavigate();
+  const { addToCart, isInCart: checkIsInCart } = useCart();
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [activeRegion, setActiveRegion] = useState('all');
   const [availability, setAvailability] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  // Check if location is already in cart
+  const isInCart = (locationId) => {
+    return checkIsInCart(locationId, 'accommodation');
+  };
 
   // Region data with colors
   const regions = {
@@ -199,10 +220,48 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
     }
   };
 
-  const handleBookNow = () => {
-    if (selectedLocation && onBookNow) {
-      onBookNow(selectedLocation);
+  const handleAddToCart = async () => {
+    if (!selectedLocation) return;
+    
+    setAddingToCart(true);
+    try {
+      const nights = availability?.total_nights || 1;
+      const totalPrice = selectedLocation.price * nights;
+      
+      await addToCart({
+        type: 'accommodation',
+        id: selectedLocation.id,
+        name: selectedLocation.name,
+        price: selectedLocation.price,
+        quantity: 1,
+        totalPrice: totalPrice,
+        details: {
+          image: selectedLocation.image,
+          region: selectedLocation.region,
+          type: selectedLocation.type,
+          capacity: selectedLocation.capacity,
+          amenities: selectedLocation.amenities,
+          checkIn: bookingParams?.checkInDate || '',
+          checkOut: bookingParams?.checkOutDate || '',
+          guests: bookingParams?.guests || 2,
+          nights: nights,
+          coords: selectedLocation.coords
+        }
+      });
+      showToast(`${selectedLocation.name} added to cart!`);
+    } catch (error) {
+      showToast('Failed to add to cart', 'error');
+    } finally {
+      setAddingToCart(false);
     }
+  };
+
+  const handleContinueToSafari = () => {
+    navigate('/safari-route-explorer');
+  };
+
+  const handleContinueToCheckout = () => {
+    navigate('/shopping-cart');
   };
 
   const getTypeLabel = (type) => {
@@ -540,18 +599,53 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
               {(() => {
                 const avail = getLocationAvailability(selectedLocation.id);
                 const isBookable = !avail || avail.is_available;
+                const alreadyInCart = isInCart(selectedLocation.id);
+                
                 return (
-                  <Button 
-                    onClick={handleBookNow}
-                    disabled={!isBookable}
-                    className={`w-full ${isBookable 
-                      ? 'bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF8C5A] shadow-lg shadow-[#FF8C5A]/30' 
-                      : 'bg-gray-600 cursor-not-allowed opacity-50'}`}
-                    data-testid="book-location-btn"
-                  >
-                    <Icon name={isBookable ? "Calendar" : "XCircle"} size={18} />
-                    {isBookable ? 'Book This Stay' : 'Not Available'}
-                  </Button>
+                  <div className="space-y-3">
+                    {alreadyInCart ? (
+                      <div className="w-full py-3 bg-green-500/20 text-green-400 rounded-xl text-center font-medium flex items-center justify-center gap-2">
+                        <Icon name="CheckCircle" size={18} />
+                        Added to Cart
+                      </div>
+                    ) : (
+                      <Button 
+                        onClick={handleAddToCart}
+                        disabled={!isBookable || addingToCart}
+                        className={`w-full ${isBookable 
+                          ? 'bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF8C5A] shadow-lg shadow-[#FF8C5A]/30' 
+                          : 'bg-gray-600 cursor-not-allowed opacity-50'}`}
+                        data-testid="add-to-cart-btn"
+                      >
+                        {addingToCart ? (
+                          <><Icon name="Loader2" size={18} className="animate-spin" /> Adding...</>
+                        ) : (
+                          <><Icon name={isBookable ? "ShoppingCart" : "XCircle"} size={18} />
+                          {isBookable ? 'Add to Cart' : 'Not Available'}</>
+                        )}
+                      </Button>
+                    )}
+                    
+                    {/* Continue options */}
+                    {(alreadyInCart || isBookable) && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleContinueToSafari}
+                          className="flex-1 py-2.5 px-3 bg-[#4A7C2E]/20 hover:bg-[#4A7C2E]/30 text-[#4A7C2E] rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1"
+                        >
+                          <Icon name="Binoculars" size={16} />
+                          Add Safari
+                        </button>
+                        <button
+                          onClick={handleContinueToCheckout}
+                          className="flex-1 py-2.5 px-3 bg-[#0D1A0D] hover:bg-[#1E2E1E] text-white rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1"
+                        >
+                          <Icon name="CreditCard" size={16} />
+                          Checkout
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 );
               })()}
 

@@ -12,6 +12,7 @@ import AdminDashboard from './pages/admin-dashboard';
 import AdminLogin from './pages/admin-login';
 import SafariRouteExplorer from './pages/safari-route-explorer';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
+import FloatingCartIndicator from './components/FloatingCartIndicator';
 
 const Routes = () => {
   return (
@@ -38,6 +39,7 @@ const Routes = () => {
         />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
+      <FloatingCartIndicator />
       </ErrorBoundary>
     </BrowserRouter>
   );

@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../../components/navigation/Header';
 import Icon from '../../components/AppIcon';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useCart } from '../../contexts/CartContext';
 import 'leaflet/dist/leaflet.css';
+
+// Simple toast notification
+const showToast = (message, type = 'success') => {
+  const toastEl = document.createElement('div');
+  toastEl.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all transform ${
+    type === 'success' ? 'bg-green-600 text-white' : type === 'error' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'
+  }`;
+  toastEl.textContent = message;
+  document.body.appendChild(toastEl);
+  setTimeout(() => toastEl.remove(), 3000);
+};
 
 // Custom marker creator
 const createWaypointIcon = (number, color) => {
@@ -68,12 +81,22 @@ const MapController = ({ route, isAnimating }) => {
 };
 
 const SafariRouteExplorer = () => {
+  const navigate = useNavigate();
+  const { addToCart, isInCart: checkIsInCart, getCartCount } = useCart();
   const [selectedRoute, setSelectedRoute] = useState('jeep');
   const [showWildlifeZones, setShowWildlifeZones] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationProgress, setAnimationProgress] = useState(0);
   const [selectedWaypoint, setSelectedWaypoint] = useState(null);
   const [selectedZone, setSelectedZone] = useState(null);
+  const [safariDate, setSafariDate] = useState('');
+  const [participants, setParticipants] = useState(2);
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  // Check if safari is in cart
+  const isSafariInCart = (routeId) => {
+    return checkIsInCart(routeId, 'activity');
+  };
 
   // Real safari routes with actual coordinates in Mudumalai Tiger Reserve
   const safariRoutes = {
@@ -684,14 +707,140 @@ const SafariRouteExplorer = () => {
                   </div>
                   <Icon name={currentRoute.icon} size={48} className="text-white/30" />
                 </div>
-                <button 
-                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  className="w-full py-3 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
-                >
-                  <Icon name="Calendar" size={18} />
-                  Book This Safari
-                </button>
+                
+                {/* Safari Date Selection */}
+                <div className="mb-4">
+                  <label className="text-white/70 text-xs mb-1 block">Safari Date</label>
+                  <input
+                    type="date"
+                    value={safariDate}
+                    onChange={(e) => setSafariDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-white/40"
+                    data-testid="safari-date-input"
+                  />
+                </div>
+                
+                {/* Participants */}
+                <div className="mb-4">
+                  <label className="text-white/70 text-xs mb-1 block">Participants</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setParticipants(Math.max(1, participants - 1))}
+                      className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center"
+                    >
+                      <Icon name="Minus" size={16} />
+                    </button>
+                    <span className="text-lg font-bold w-8 text-center">{participants}</span>
+                    <button
+                      onClick={() => setParticipants(Math.min(currentRoute.maxCapacity, participants + 1))}
+                      className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center"
+                    >
+                      <Icon name="Plus" size={16} />
+                    </button>
+                    <span className="text-white/50 text-xs ml-2">Max {currentRoute.maxCapacity}</span>
+                  </div>
+                </div>
+                
+                {/* Total */}
+                <div className="flex items-center justify-between py-2 border-t border-white/20 mb-4">
+                  <span className="text-white/70">Total</span>
+                  <span className="text-xl font-bold">₹{(currentRoute.price * participants).toLocaleString()}</span>
+                </div>
+                
+                {isSafariInCart(currentRoute.id) ? (
+                  <div className="space-y-3">
+                    <div className="w-full py-3 bg-white/20 text-white rounded-xl text-center font-medium flex items-center justify-center gap-2">
+                      <Icon name="CheckCircle" size={18} />
+                      Added to Cart
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => navigate('/e-shop')}
+                        className="flex-1 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1"
+                      >
+                        <Icon name="ShoppingBag" size={16} />
+                        Add Souvenirs
+                      </button>
+                      <button
+                        onClick={() => navigate('/shopping-cart')}
+                        className="flex-1 py-2.5 bg-white hover:bg-white/90 text-gray-900 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1"
+                      >
+                        <Icon name="CreditCard" size={16} />
+                        Checkout
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={async () => {
+                      if (!safariDate) {
+                        showToast('Please select a date for your safari', 'error');
+                        return;
+                      }
+                      setAddingToCart(true);
+                      try {
+                        await addToCart({
+                          type: 'activity',
+                          id: currentRoute.id,
+                          name: currentRoute.name,
+                          price: currentRoute.price,
+                          quantity: participants,
+                          totalPrice: currentRoute.price * participants,
+                          details: {
+                            date: safariDate,
+                            participants: participants,
+                            duration: currentRoute.duration,
+                            distance: currentRoute.distance,
+                            difficulty: currentRoute.difficulty,
+                            bestTime: currentRoute.bestTime
+                          }
+                        });
+                        showToast(`${currentRoute.name} added to cart!`);
+                      } catch (error) {
+                        showToast('Failed to add to cart', 'error');
+                      } finally {
+                        setAddingToCart(false);
+                      }
+                    }}
+                    disabled={addingToCart}
+                    className="w-full py-3 bg-white/20 hover:bg-white/30 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                    data-testid="add-safari-to-cart-btn"
+                  >
+                    {addingToCart ? (
+                      <><Icon name="Loader2" size={18} className="animate-spin" /> Adding...</>
+                    ) : (
+                      <><Icon name="ShoppingCart" size={18} /> Add to Cart</>
+                    )}
+                  </button>
+                )}
               </div>
+              
+              {/* Cart Summary */}
+              {getCartCount() > 0 && (
+                <div className="bg-[#152415] rounded-2xl p-4 border border-[#4A7C2E]/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[#9CA38B] text-sm">Items in cart</span>
+                    <span className="text-white font-bold">{getCartCount()}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate('/e-shop')}
+                      className="flex-1 py-2 bg-[#4A7C2E]/20 hover:bg-[#4A7C2E]/30 text-[#4A7C2E] rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
+                    >
+                      <Icon name="ShoppingBag" size={14} />
+                      Souvenirs
+                    </button>
+                    <button
+                      onClick={() => navigate('/shopping-cart')}
+                      className="flex-1 py-2 bg-[#FF8C5A]/20 hover:bg-[#FF8C5A]/30 text-[#FF8C5A] rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
+                    >
+                      <Icon name="ShoppingCart" size={14} />
+                      View Cart
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Selected Zone Info */}
               {selectedZone && (
