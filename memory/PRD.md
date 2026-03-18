@@ -31,6 +31,17 @@ Compile and build the existing codebase and change the tech stack from React + S
 
 ## What's Been Implemented
 
+### March 18, 2026 - Real-time Availability Checking
+- ✅ Added `/api/check-availability` backend endpoint
+- ✅ Map markers show color-coded availability (green=available, amber=limited, red=booked)
+- ✅ Header displays booking search parameters when checking availability
+- ✅ Map title changes to "Real-time Availability Map" during availability check
+- ✅ Availability status legend in sidebar
+- ✅ Location details panel shows availability badge and booking estimate
+- ✅ Safari availability badge shows available slots
+- ✅ "Book This Stay" button disabled for unavailable locations
+- ✅ Region filters show available/total counts
+
 ### March 18, 2026 - Booking Widget Integration
 - ✅ Integrated booking widget directly into homepage hero carousel
 - ✅ Booking type selector (Rooms Only, Safari Only, Rooms + Safari)
@@ -116,12 +127,12 @@ Compile and build the existing codebase and change the tech stack from React + S
 ### P0 (Critical)
 - ✅ Booking widget integration into homepage (COMPLETED)
 - ✅ Remove old booking page (COMPLETED)
-- [ ] Connect booking widget to backend availability API
+- ✅ Real-time availability checking with visual map indicators (COMPLETED)
 
 ### P1 (High Priority)
 - [ ] Complete booking flow - link map selections to booking confirmation
 - [ ] Add pagination to all list endpoints
-- [ ] Implement booking date blocking functionality
+- [ ] Implement booking date blocking functionality (admin feature)
 - [ ] Add email/SMS notification integration
 - [ ] User registration and public booking flow
 
