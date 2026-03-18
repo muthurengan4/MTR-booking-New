@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+// Use REACT_APP_BACKEND_URL for external access, fallback to VITE_API_URL for local dev
+const API_URL = import.meta.env.REACT_APP_BACKEND_URL || import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL: API_URL,
