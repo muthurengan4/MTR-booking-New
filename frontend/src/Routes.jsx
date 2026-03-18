@@ -8,7 +8,6 @@ import HomeLanding from './pages/home-landing';
 import ActivityBooking from './pages/activity-booking';
 import EShop from './pages/e-shop';
 import UserDashboard from './pages/user-dashboard';
-import InteractiveMapBooking from './pages/interactive-map-booking';
 import AdminDashboard from './pages/admin-dashboard';
 import AdminLogin from './pages/admin-login';
 import SafariRouteExplorer from './pages/safari-route-explorer';
@@ -27,7 +26,6 @@ const Routes = () => {
         <Route path="/activity-booking" element={<ActivityBooking />} />
         <Route path="/e-shop" element={<EShop />} />
         <Route path="/user-dashboard" element={<UserDashboard />} />
-        <Route path="/interactive-map-booking" element={<InteractiveMapBooking />} />
         <Route path="/safari-route-explorer" element={<SafariRouteExplorer />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route 

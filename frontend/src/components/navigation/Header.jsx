@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Image from '../AppImage';
 
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartItemCount] = useState(3);
   const [isAuthenticated] = useState(false);
@@ -13,11 +14,33 @@ const Header = () => {
 
   const navigationItems = [
     { label: 'Home', path: '/home-landing', icon: 'Home' },
-    { label: 'Book Stay', path: '/interactive-map-booking', icon: 'MapPin' },
+    { label: 'Book Stay', path: '/#booking', icon: 'MapPin', isScroll: true },
     { label: 'Activities', path: '/activity-booking', icon: 'Compass' },
     { label: 'Safari Routes', path: '/safari-route-explorer', icon: 'Map' },
     { label: 'Shop', path: '/e-shop', icon: 'ShoppingBag' }
   ];
+
+  const handleNavClick = (item, e) => {
+    if (item.isScroll) {
+      e.preventDefault();
+      // If not on homepage, navigate first then scroll
+      if (location.pathname !== '/' && location.pathname !== '/home-landing') {
+        navigate('/');
+        setTimeout(() => {
+          const bookingWidget = document.querySelector('[data-testid="hero-carousel"]');
+          if (bookingWidget) {
+            bookingWidget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      } else {
+        // Already on homepage, just scroll
+        const bookingWidget = document.querySelector('[data-testid="hero-carousel"]');
+        if (bookingWidget) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    }
+  };
 
   const isActivePath = (path) => {
     return location?.pathname === path;
@@ -69,7 +92,8 @@ const Header = () => {
                   {navigationItems?.map((item) => (
                     <Link
                       key={item?.path}
-                      to={item?.path}
+                      to={item?.isScroll ? '/' : item?.path}
+                      onClick={(e) => handleNavClick(item, e)}
                       className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-organic ${
                         isActivePath(item?.path)
                           ? 'bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white shadow-lg shadow-[#4A7C2E]/30'
@@ -171,8 +195,11 @@ const Header = () => {
               {navigationItems?.map((item) => (
                 <Link
                   key={item?.path}
-                  to={item?.path}
-                  onClick={toggleMobileMenu}
+                  to={item?.isScroll ? '/' : item?.path}
+                  onClick={(e) => {
+                    handleNavClick(item, e);
+                    toggleMobileMenu();
+                  }}
                   className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-organic ${
                     isActivePath(item?.path)
                       ? 'bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white'

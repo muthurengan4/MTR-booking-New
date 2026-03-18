@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/navigation/Header';
 import HeroCarousel from './components/HeroCarousel';
@@ -10,13 +10,26 @@ import Footer from './components/Footer';
 
 const HomeLanding = () => {
   const navigate = useNavigate();
+  const [bookingParams, setBookingParams] = useState(null);
 
   const handleLocationClick = (location) => {
     console.log('Location selected:', location);
   };
 
   const handleBookNowClick = (location) => {
-    navigate('/interactive-map-booking', { state: { selectedLocation: location } });
+    // Scroll to the top where booking widget is located
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    console.log('Book now for location:', location);
+  };
+
+  const handleSearch = (params) => {
+    setBookingParams(params);
+    console.log('Booking search params:', params);
+    // Scroll to map section to explore accommodations
+    const mapSection = document.getElementById('map-section');
+    if (mapSection) {
+      mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleServiceClick = (service) => {
@@ -40,13 +53,14 @@ const HomeLanding = () => {
       <Header />
       
       <main className="pt-[88px]">
-        {/* Hero Carousel Section */}
-        <HeroCarousel />
+        {/* Hero Carousel Section with Booking Widget */}
+        <HeroCarousel onSearch={handleSearch} />
         
         {/* Map Section with smooth blend */}
         <HeroSection 
           onLocationClick={handleLocationClick}
           onBookNowClick={handleBookNowClick}
+          bookingParams={bookingParams}
         />
         
         <ServicesOverview 

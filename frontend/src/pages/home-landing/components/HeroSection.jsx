@@ -16,7 +16,7 @@ const HeroSection = ({ onLocationClick, onBookNowClick }) => {
   };
 
   return (
-    <section className="relative bg-[#0D1A0D] py-12 md:py-16 lg:py-20">
+    <section id="map-section" className="relative bg-[#0D1A0D] py-12 md:py-16 lg:py-20" data-testid="map-section">
       {/* Subtle forest pattern overlay */}
       <div className="absolute inset-0 opacity-5" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%234A7C2E" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'}} />
       
@@ -80,14 +80,15 @@ const HeroSection = ({ onLocationClick, onBookNowClick }) => {
         {/* Bottom CTA */}
         <div className="mt-10 text-center">
           <p className="text-sm text-[#9CA38B] mb-4">
-            Can't find what you're looking for?
+            Need help planning your stay?
           </p>
           <button 
-            onClick={() => window.location.href = '/interactive-map-booking'}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white rounded-xl hover:from-[#5A8C3E] hover:to-[#3D6026] transition-all duration-300 shadow-lg shadow-[#4A7C2E]/30"
+            data-testid="back-to-booking-btn"
           >
-            <Icon name="Search" size={18} />
-            Browse All Accommodations
+            <Icon name="ArrowUp" size={18} />
+            Back to Booking
           </button>
         </div>
       </div>
