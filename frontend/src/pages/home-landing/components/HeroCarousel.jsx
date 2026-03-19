@@ -17,37 +17,37 @@ const HeroCarousel = ({ onSearch }) => {
       image: 'https://images.unsplash.com/photo-1549366021-9f761d450615?w=1920&q=80',
       title: 'Experience the Wild',
       subtitle: 'Journey through the untamed beauty of Mudumalai',
-      overlay: 'from-[#0D1A0D]/80 via-[#0D1A0D]/40 to-transparent'
+      overlay: 'from-[#1E3A1E]/80 via-[#1E3A1E]/40 to-transparent'
     },
     {
       image: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=1920&q=80',
       title: 'Majestic Wildlife',
       subtitle: 'Home to Bengal Tigers, Asian Elephants & more',
-      overlay: 'from-[#0D1A0D]/80 via-[#0D1A0D]/40 to-transparent'
+      overlay: 'from-[#1E3A1E]/80 via-[#1E3A1E]/40 to-transparent'
     },
     {
       image: 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=1920&q=80',
       title: 'Elephant Sanctuary',
       subtitle: 'Witness the gentle giants in their natural habitat',
-      overlay: 'from-[#0D1A0D]/80 via-[#0D1A0D]/40 to-transparent'
+      overlay: 'from-[#1E3A1E]/80 via-[#1E3A1E]/40 to-transparent'
     },
     {
       image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=1920&q=80',
       title: 'Nature Trails',
       subtitle: 'Trek through ancient forests and scenic landscapes',
-      overlay: 'from-[#0D1A0D]/80 via-[#0D1A0D]/40 to-transparent'
+      overlay: 'from-[#1E3A1E]/80 via-[#1E3A1E]/40 to-transparent'
     },
     {
       image: 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=1920&q=80',
       title: 'Birdwatcher\'s Paradise',
       subtitle: 'Over 250 species of exotic birds await you',
-      overlay: 'from-[#0D1A0D]/80 via-[#0D1A0D]/40 to-transparent'
+      overlay: 'from-[#1E3A1E]/80 via-[#1E3A1E]/40 to-transparent'
     },
     {
       image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1920&q=80',
       title: 'Sunset Safari',
       subtitle: 'Magical golden hour experiences in the wilderness',
-      overlay: 'from-[#0D1A0D]/80 via-[#0D1A0D]/40 to-transparent'
+      overlay: 'from-[#1E3A1E]/80 via-[#1E3A1E]/40 to-transparent'
     }
   ];
 
@@ -153,17 +153,17 @@ const HeroCarousel = ({ onSearch }) => {
 
           {/* Booking Widget */}
           <div className="max-w-5xl">
-            <div className="bg-[#0D1A0D]/80 backdrop-blur-xl rounded-2xl border border-[#4A7C2E]/30 shadow-2xl shadow-black/40 overflow-hidden">
+            <div className="bg-[#1E3A1E]/80 backdrop-blur-xl rounded-2xl border border-[#5A9A3A]/30 shadow-2xl shadow-black/40 overflow-hidden">
               {/* Booking Type Selector */}
-              <div className="flex border-b border-[#4A7C2E]/20">
+              <div className="flex border-b border-[#5A9A3A]/20">
                 {bookingTypes.map((type) => (
                   <button
                     key={type.id}
                     onClick={() => setBookingType(type.id)}
                     className={`flex-1 px-4 py-4 flex items-center justify-center gap-3 transition-all duration-300 ${
                       bookingType === type.id
-                        ? 'bg-gradient-to-b from-[#4A7C2E]/30 to-transparent text-[#4A7C2E] border-b-2 border-[#4A7C2E]'
-                        : 'text-[#9CA38B] hover:text-white hover:bg-[#4A7C2E]/10'
+                        ? 'bg-gradient-to-b from-[#5A9A3A]/30 to-transparent text-[#5A9A3A] border-b-2 border-[#5A9A3A]'
+                        : 'text-[#B8C4A8] hover:text-white hover:bg-[#5A9A3A]/10'
                     }`}
                     data-testid={`booking-type-${type.id}`}
                   >
@@ -182,17 +182,17 @@ const HeroCarousel = ({ onSearch }) => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {/* Check-in Date */}
                   <div className="relative">
-                    <label className="block text-xs font-medium text-[#4A7C2E] mb-2 uppercase tracking-wider">
+                    <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
                       Check-in Date
                     </label>
                     <div className="relative">
-                      <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A7C2E]" />
+                      <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
                       <input
                         type="date"
                         value={checkInDate}
                         onChange={(e) => setCheckInDate(e.target.value)}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full pl-10 pr-4 py-3 bg-[#152415] border border-[#4A7C2E]/30 rounded-xl text-white focus:outline-none focus:border-[#4A7C2E] focus:ring-2 focus:ring-[#4A7C2E]/20 transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
                         data-testid="check-in-date"
                       />
                     </div>
@@ -200,17 +200,17 @@ const HeroCarousel = ({ onSearch }) => {
 
                   {/* Check-out Date */}
                   <div className="relative">
-                    <label className="block text-xs font-medium text-[#4A7C2E] mb-2 uppercase tracking-wider">
+                    <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
                       Check-out Date
                     </label>
                     <div className="relative">
-                      <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A7C2E]" />
+                      <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
                       <input
                         type="date"
                         value={checkOutDate}
                         onChange={(e) => setCheckOutDate(e.target.value)}
                         min={checkInDate || new Date().toISOString().split('T')[0]}
-                        className="w-full pl-10 pr-4 py-3 bg-[#152415] border border-[#4A7C2E]/30 rounded-xl text-white focus:outline-none focus:border-[#4A7C2E] focus:ring-2 focus:ring-[#4A7C2E]/20 transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
                         data-testid="check-out-date"
                       />
                     </div>
@@ -218,24 +218,24 @@ const HeroCarousel = ({ onSearch }) => {
 
                   {/* Guests */}
                   <div className="relative">
-                    <label className="block text-xs font-medium text-[#4A7C2E] mb-2 uppercase tracking-wider">
+                    <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
                       Guests
                     </label>
                     <div className="relative">
-                      <Icon name="Users" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A7C2E]" />
+                      <Icon name="Users" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
                       <select
                         value={guests}
                         onChange={(e) => setGuests(Number(e.target.value))}
-                        className="w-full pl-10 pr-4 py-3 bg-[#152415] border border-[#4A7C2E]/30 rounded-xl text-white focus:outline-none focus:border-[#4A7C2E] focus:ring-2 focus:ring-[#4A7C2E]/20 transition-all appearance-none cursor-pointer"
+                        className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all appearance-none cursor-pointer"
                         data-testid="guests-select"
                       >
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                          <option key={num} value={num} className="bg-[#152415]">
+                          <option key={num} value={num} className="bg-[#2A4A2A]">
                             {num} {num === 1 ? 'Guest' : 'Guests'}
                           </option>
                         ))}
                       </select>
-                      <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A7C2E] pointer-events-none" />
+                      <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A9A3A] pointer-events-none" />
                     </div>
                   </div>
 
@@ -243,7 +243,7 @@ const HeroCarousel = ({ onSearch }) => {
                   <div className="flex items-end">
                     <button
                       onClick={handleSearch}
-                      className="w-full py-3 px-6 bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF8C5A] text-white font-semibold rounded-xl shadow-lg shadow-[#FF8C5A]/30 hover:shadow-xl hover:shadow-[#FF8C5A]/40 transform hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2"
+                      className="w-full py-3 px-6 bg-gradient-to-r from-[#FF9E6D] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF9E6D] text-white font-semibold rounded-xl shadow-lg shadow-[#FF9E6D]/30 hover:shadow-xl hover:shadow-[#FF9E6D]/40 transform hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2"
                       data-testid="search-availability-btn"
                     >
                       <Icon name="Search" size={20} />
@@ -253,21 +253,21 @@ const HeroCarousel = ({ onSearch }) => {
                 </div>
 
                 {/* Quick Info */}
-                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-[#9CA38B]">
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-[#B8C4A8]">
                   <div className="flex items-center gap-1">
-                    <Icon name="Shield" size={14} className="text-[#4A7C2E]" />
+                    <Icon name="Shield" size={14} className="text-[#5A9A3A]" />
                     <span>Free Cancellation</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Icon name="CreditCard" size={14} className="text-[#4A7C2E]" />
+                    <Icon name="CreditCard" size={14} className="text-[#5A9A3A]" />
                     <span>Pay at Property</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Icon name="Clock" size={14} className="text-[#4A7C2E]" />
+                    <Icon name="Clock" size={14} className="text-[#5A9A3A]" />
                     <span>Instant Confirmation</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Icon name="Leaf" size={14} className="text-[#4A7C2E]" />
+                    <Icon name="Leaf" size={14} className="text-[#5A9A3A]" />
                     <span>Eco-Friendly Stay</span>
                   </div>
                 </div>
@@ -280,14 +280,14 @@ const HeroCarousel = ({ onSearch }) => {
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 md:left-8 top-1/3 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 bg-[#0D1A0D]/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-[#4A7C2E]/50 transition-all duration-300 border border-white/20"
+        className="absolute left-4 md:left-8 top-1/3 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 bg-[#1E3A1E]/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-[#5A9A3A]/50 transition-all duration-300 border border-white/20"
         aria-label="Previous slide"
       >
         <Icon name="ChevronLeft" size={28} />
       </button>
       <button
         onClick={nextSlide}
-        className="absolute right-4 md:right-8 top-1/3 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 bg-[#0D1A0D]/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-[#4A7C2E]/50 transition-all duration-300 border border-white/20"
+        className="absolute right-4 md:right-8 top-1/3 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 bg-[#1E3A1E]/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-[#5A9A3A]/50 transition-all duration-300 border border-white/20"
         aria-label="Next slide"
       >
         <Icon name="ChevronRight" size={28} />
@@ -301,7 +301,7 @@ const HeroCarousel = ({ onSearch }) => {
             onClick={() => goToSlide(index)}
             className={`transition-all duration-300 rounded-full ${
               index === currentIndex 
-                ? 'w-10 h-3 bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35]' 
+                ? 'w-10 h-3 bg-gradient-to-r from-[#FF9E6D] to-[#FF6B35]' 
                 : 'w-3 h-3 bg-white/40 hover:bg-white/60'
             }`}
             aria-label={`Go to slide ${index + 1}`}
@@ -310,12 +310,12 @@ const HeroCarousel = ({ onSearch }) => {
       </div>
 
       {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0D1A0D] to-transparent z-20 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#1E3A1E] to-transparent z-20 pointer-events-none" />
       
       {/* Decorative bottom border */}
       <div 
         className="absolute bottom-0 left-0 right-0 h-1 z-30"
-        style={{ background: 'linear-gradient(to right, #2D5016, #4A7C2E, #8B4513, #FF8C5A)' }}
+        style={{ background: 'linear-gradient(to right, #2D5016, #5A9A3A, #8B4513, #FF9E6D)' }}
       />
     </section>
   );

@@ -104,7 +104,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
     },
     kargudi: {
       name: 'Kargudi',
-      color: '#4A7C2E',
+      color: '#5A9A3A',
       description: 'Peaceful retreat with bird watching opportunities',
       center: [11.5750, 76.5553]
     },
@@ -311,12 +311,12 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
     <div className="grid lg:grid-cols-5 gap-6">
       {/* Region Filter Sidebar */}
       <div className="lg:col-span-1 space-y-3">
-        <h4 className="font-heading font-semibold text-[#4A7C2E] mb-4">Filter by Region</h4>
+        <h4 className="font-heading font-semibold text-[#5A9A3A] mb-4">Filter by Region</h4>
         
         {/* Loading indicator */}
         {isLoading && (
-          <div className="flex items-center gap-2 text-sm text-[#9CA38B] mb-3">
-            <div className="w-4 h-4 border-2 border-[#4A7C2E] border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center gap-2 text-sm text-[#B8C4A8] mb-3">
+            <div className="w-4 h-4 border-2 border-[#5A9A3A] border-t-transparent rounded-full animate-spin" />
             Checking availability...
           </div>
         )}
@@ -325,8 +325,8 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
           onClick={() => setActiveRegion('all')}
           className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${
             activeRegion === 'all' 
-              ? 'bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white shadow-lg shadow-[#4A7C2E]/30' 
-              : 'bg-[#152415] hover:bg-[#1E2E1E] text-[#9CA38B] border border-[#4A7C2E]/20'
+              ? 'bg-gradient-to-r from-[#5A9A3A] to-[#2D5016] text-white shadow-lg shadow-[#5A9A3A]/30' 
+              : 'bg-[#2A4A2A] hover:bg-[#3A5A3A] text-[#B8C4A8] border border-[#5A9A3A]/20'
           }`}
         >
           <Icon name="Globe" size={18} />
@@ -343,7 +343,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
               className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${
                 activeRegion === key 
                   ? 'text-white shadow-lg' 
-                  : 'bg-[#152415] hover:bg-[#1E2E1E] border'
+                  : 'bg-[#2A4A2A] hover:bg-[#3A5A3A] border'
               }`}
               style={{
                 backgroundColor: activeRegion === key ? region.color : undefined,
@@ -358,7 +358,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
               <span className="font-medium" style={{ color: activeRegion === key ? 'white' : region.color }}>
                 {region.name}
               </span>
-              <span className="ml-auto text-sm opacity-75" style={{ color: activeRegion === key ? 'white' : '#9CA38B' }}>
+              <span className="ml-auto text-sm opacity-75" style={{ color: activeRegion === key ? 'white' : '#B8C4A8' }}>
                 {availability ? `${stats.available}/${stats.total}` : stats.total}
               </span>
             </button>
@@ -367,8 +367,8 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
 
         {/* Availability Legend */}
         {bookingParams && (
-          <div className="mt-6 p-4 bg-[#152415] rounded-xl border border-[#4A7C2E]/20">
-            <p className="text-xs font-semibold text-[#4A7C2E] mb-3">Availability Status</p>
+          <div className="mt-6 p-4 bg-[#2A4A2A] rounded-xl border border-[#5A9A3A]/20">
+            <p className="text-xs font-semibold text-[#5A9A3A] mb-3">Availability Status</p>
             <div className="space-y-2 text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
@@ -393,16 +393,16 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
         )}
 
         {/* Map Legend */}
-        <div className="mt-4 p-4 bg-[#152415] rounded-xl border border-[#4A7C2E]/20">
-          <p className="text-xs font-semibold text-[#4A7C2E] mb-3">Accommodation Types</p>
+        <div className="mt-4 p-4 bg-[#2A4A2A] rounded-xl border border-[#5A9A3A]/20">
+          <p className="text-xs font-semibold text-[#5A9A3A] mb-3">Accommodation Types</p>
           <div className="space-y-2 text-xs">
             {[
-              { type: 'suite', label: 'Luxury Suite', color: '#4A7C2E' },
+              { type: 'suite', label: 'Luxury Suite', color: '#5A9A3A' },
               { type: 'cottage', label: 'Forest Cottage', color: '#5A8C3E' },
               { type: 'log-house', label: 'Log House', color: '#A0522D' },
-              { type: 'dormitory', label: 'Dormitory', color: '#FF8C5A' },
+              { type: 'dormitory', label: 'Dormitory', color: '#FF9E6D' },
               { type: 'room', label: 'Rest House', color: '#F0AD4E' },
-              { type: 'shed', label: 'Trekking Shed', color: '#9CA38B' }
+              { type: 'shed', label: 'Trekking Shed', color: '#B8C4A8' }
             ].map(item => (
               <div key={item.type} className="flex items-center gap-2">
                 <div 
@@ -420,7 +420,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
 
       {/* Real Interactive Map */}
       <div className="lg:col-span-3">
-        <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border-2 border-[#4A7C2E]/30 shadow-2xl shadow-black/30">
+        <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border-2 border-[#5A9A3A]/30 shadow-2xl shadow-black/30">
           <MapContainer
             center={mapCenter}
             zoom={11}
@@ -444,7 +444,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
                   key={location.id}
                   position={[location.coords.lat, location.coords.lng]}
                   icon={createCustomIcon(
-                    regions[location.region]?.color || '#4A7C2E', 
+                    regions[location.region]?.color || '#5A9A3A', 
                     location.type,
                     avail?.availability_status
                   )}
@@ -461,13 +461,13 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
                         style={{ width: 'calc(100% + 24px)' }}
                       />
                       <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-bold text-[#4A7C2E] text-sm">{location.name}</h4>
+                        <h4 className="font-bold text-[#5A9A3A] text-sm">{location.name}</h4>
                         {getAvailabilityBadge(location.id)}
                       </div>
-                      <p className="text-xs text-[#9CA38B] mb-2">{location.description}</p>
+                      <p className="text-xs text-[#B8C4A8] mb-2">{location.description}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-[#9CA38B]">{getTypeLabel(location.type)}</span>
-                        <span className="font-bold text-[#FF8C5A]">₹{location.price.toLocaleString()}</span>
+                        <span className="text-xs text-[#B8C4A8]">{getTypeLabel(location.type)}</span>
+                        <span className="font-bold text-[#FF9E6D]">₹{location.price.toLocaleString()}</span>
                       </div>
                     </div>
                   </Popup>
@@ -477,15 +477,15 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
           </MapContainer>
 
           {/* Map Title Overlay */}
-          <div className="absolute top-4 left-4 bg-[#152415]/95 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg shadow-black/30 z-[1000] border border-[#4A7C2E]/30">
-            <h4 className="font-heading font-bold text-[#4A7C2E] text-sm">Mudumalai Tiger Reserve</h4>
-            <p className="text-xs text-[#9CA38B]">
+          <div className="absolute top-4 left-4 bg-[#2A4A2A]/95 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg shadow-black/30 z-[1000] border border-[#5A9A3A]/30">
+            <h4 className="font-heading font-bold text-[#5A9A3A] text-sm">Mudumalai Tiger Reserve</h4>
+            <p className="text-xs text-[#B8C4A8]">
               {bookingParams ? 'Real-time Availability Map' : 'Interactive Accommodation Map'}
             </p>
           </div>
 
           {/* Location Count Badge */}
-          <div className="absolute bottom-4 left-4 bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white rounded-full px-4 py-2 shadow-lg shadow-[#4A7C2E]/30 z-[1000] flex items-center gap-2">
+          <div className="absolute bottom-4 left-4 bg-gradient-to-r from-[#5A9A3A] to-[#2D5016] text-white rounded-full px-4 py-2 shadow-lg shadow-[#5A9A3A]/30 z-[1000] flex items-center gap-2">
             <Icon name="MapPin" size={16} />
             <span className="text-sm font-medium">{filteredLocations.length} Locations</span>
           </div>
@@ -509,14 +509,14 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
       {/* Location Details Panel */}
       <div className="lg:col-span-1">
         {selectedLocation ? (
-          <div className="bg-[#152415] rounded-2xl shadow-2xl shadow-black/30 overflow-hidden border border-[#4A7C2E]/30 sticky top-24">
+          <div className="bg-[#2A4A2A] rounded-2xl shadow-2xl shadow-black/30 overflow-hidden border border-[#5A9A3A]/30 sticky top-24">
             <div className="relative h-40">
               <img 
                 src={selectedLocation.image} 
                 alt={selectedLocation.name}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0D1A0D] via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1E3A1E] via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 right-3">
                 <div className="flex items-center gap-2 mb-1">
                   <span 
@@ -532,66 +532,66 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
             </div>
             
             <div className="p-4 space-y-4">
-              <p className="text-sm text-[#9CA38B]">{selectedLocation.description}</p>
+              <p className="text-sm text-[#B8C4A8]">{selectedLocation.description}</p>
               
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#9CA38B]">{getTypeLabel(selectedLocation.type)}</span>
+                <span className="text-sm text-[#B8C4A8]">{getTypeLabel(selectedLocation.type)}</span>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-[#4A7C2E]">₹{selectedLocation.price.toLocaleString()}</p>
-                  <p className="text-xs text-[#9CA38B]">per night</p>
+                  <p className="text-2xl font-bold text-[#5A9A3A]">₹{selectedLocation.price.toLocaleString()}</p>
+                  <p className="text-xs text-[#B8C4A8]">per night</p>
                 </div>
               </div>
 
               {/* Show booking details if available */}
               {bookingParams && availability && (
-                <div className="p-3 bg-[#0D1A0D] rounded-xl border border-[#4A7C2E]/20">
-                  <p className="text-xs font-semibold text-[#4A7C2E] mb-2">Your Selection</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-[#9CA38B]">
+                <div className="p-3 bg-[#1E3A1E] rounded-xl border border-[#5A9A3A]/20">
+                  <p className="text-xs font-semibold text-[#5A9A3A] mb-2">Your Selection</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-[#B8C4A8]">
                     <div>
-                      <Icon name="Calendar" size={12} className="inline mr-1 text-[#4A7C2E]" />
+                      <Icon name="Calendar" size={12} className="inline mr-1 text-[#5A9A3A]" />
                       {bookingParams.checkInDate}
                     </div>
                     <div>
-                      <Icon name="Calendar" size={12} className="inline mr-1 text-[#FF8C5A]" />
+                      <Icon name="Calendar" size={12} className="inline mr-1 text-[#FF9E6D]" />
                       {bookingParams.checkOutDate}
                     </div>
                     <div>
-                      <Icon name="Users" size={12} className="inline mr-1 text-[#4A7C2E]" />
+                      <Icon name="Users" size={12} className="inline mr-1 text-[#5A9A3A]" />
                       {bookingParams.guests} Guests
                     </div>
                     <div>
-                      <Icon name="Moon" size={12} className="inline mr-1 text-[#4A7C2E]" />
+                      <Icon name="Moon" size={12} className="inline mr-1 text-[#5A9A3A]" />
                       {availability.total_nights} Nights
                     </div>
                   </div>
-                  <div className="mt-2 pt-2 border-t border-[#4A7C2E]/20 flex justify-between items-center">
-                    <span className="text-xs text-[#9CA38B]">Total Estimate</span>
-                    <span className="font-bold text-[#FF8C5A]">
+                  <div className="mt-2 pt-2 border-t border-[#5A9A3A]/20 flex justify-between items-center">
+                    <span className="text-xs text-[#B8C4A8]">Total Estimate</span>
+                    <span className="font-bold text-[#FF9E6D]">
                       ₹{(selectedLocation.price * availability.total_nights).toLocaleString()}
                     </span>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 text-sm text-[#9CA38B]">
-                <Icon name="Users" size={16} className="text-[#4A7C2E]" />
+              <div className="flex items-center gap-2 text-sm text-[#B8C4A8]">
+                <Icon name="Users" size={16} className="text-[#5A9A3A]" />
                 <span>Max {selectedLocation.capacity} guests</span>
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-[#4A7C2E] mb-2">Amenities</p>
+                <p className="text-xs font-semibold text-[#5A9A3A] mb-2">Amenities</p>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedLocation.amenities.map((amenity, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-[#4A7C2E]/20 text-[#4A7C2E] text-xs rounded-full border border-[#4A7C2E]/30">
+                    <span key={idx} className="px-2 py-1 bg-[#5A9A3A]/20 text-[#5A9A3A] text-xs rounded-full border border-[#5A9A3A]/30">
                       {amenity}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#4A7C2E]/20">
-                <p className="text-xs text-[#9CA38B] mb-1">GPS Coordinates</p>
-                <p className="text-xs font-mono text-[#4A7C2E]">
+              <div className="pt-2 border-t border-[#5A9A3A]/20">
+                <p className="text-xs text-[#B8C4A8] mb-1">GPS Coordinates</p>
+                <p className="text-xs font-mono text-[#5A9A3A]">
                   {selectedLocation.coords.lat.toFixed(5)}°N, {selectedLocation.coords.lng.toFixed(5)}°E
                 </p>
               </div>
@@ -613,7 +613,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
                         onClick={handleAddToCart}
                         disabled={!isBookable || addingToCart}
                         className={`w-full ${isBookable 
-                          ? 'bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF8C5A] shadow-lg shadow-[#FF8C5A]/30' 
+                          ? 'bg-gradient-to-r from-[#FF9E6D] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF9E6D] shadow-lg shadow-[#FF9E6D]/30' 
                           : 'bg-gray-600 cursor-not-allowed opacity-50'}`}
                         data-testid="add-to-cart-btn"
                       >
@@ -631,14 +631,14 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
                       <div className="flex gap-2">
                         <button
                           onClick={handleContinueToSafari}
-                          className="flex-1 py-2.5 px-3 bg-[#4A7C2E]/20 hover:bg-[#4A7C2E]/30 text-[#4A7C2E] rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1"
+                          className="flex-1 py-2.5 px-3 bg-[#5A9A3A]/20 hover:bg-[#5A9A3A]/30 text-[#5A9A3A] rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1"
                         >
                           <Icon name="Binoculars" size={16} />
                           Add Safari
                         </button>
                         <button
                           onClick={handleContinueToCheckout}
-                          className="flex-1 py-2.5 px-3 bg-[#0D1A0D] hover:bg-[#1E2E1E] text-white rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1"
+                          className="flex-1 py-2.5 px-3 bg-[#1E3A1E] hover:bg-[#3A5A3A] text-white rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1"
                         >
                           <Icon name="CreditCard" size={16} />
                           Checkout
@@ -653,7 +653,7 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
                 href={`https://www.google.com/maps?q=${selectedLocation.coords.lat},${selectedLocation.coords.lng}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 text-sm text-[#4A7C2E] hover:text-[#5A8C3E] transition-colors"
+                className="flex items-center justify-center gap-2 text-sm text-[#5A9A3A] hover:text-[#5A8C3E] transition-colors"
               >
                 <Icon name="ExternalLink" size={14} />
                 View on Google Maps
@@ -661,16 +661,16 @@ const RealMudumalaiMap = ({ onLocationSelect, onBookNow, bookingParams }) => {
             </div>
           </div>
         ) : (
-          <div className="bg-[#152415]/80 backdrop-blur-sm rounded-2xl p-6 text-center border border-[#4A7C2E]/20">
-            <div className="w-16 h-16 mx-auto mb-4 bg-[#4A7C2E]/20 rounded-full flex items-center justify-center">
-              <Icon name="MousePointer" size={28} className="text-[#4A7C2E]" />
+          <div className="bg-[#2A4A2A]/80 backdrop-blur-sm rounded-2xl p-6 text-center border border-[#5A9A3A]/20">
+            <div className="w-16 h-16 mx-auto mb-4 bg-[#5A9A3A]/20 rounded-full flex items-center justify-center">
+              <Icon name="MousePointer" size={28} className="text-[#5A9A3A]" />
             </div>
-            <h4 className="font-heading font-semibold text-[#4A7C2E] mb-2">Select a Location</h4>
-            <p className="text-sm text-[#9CA38B]">
+            <h4 className="font-heading font-semibold text-[#5A9A3A] mb-2">Select a Location</h4>
+            <p className="text-sm text-[#B8C4A8]">
               Click on any marker on the map to view accommodation details and book your stay
             </p>
             {bookingParams && (
-              <p className="text-xs text-[#FF8C5A] mt-3">
+              <p className="text-xs text-[#FF9E6D] mt-3">
                 <Icon name="Info" size={12} className="inline mr-1" />
                 Green markers show available accommodations
               </p>

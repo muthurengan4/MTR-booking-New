@@ -83,7 +83,7 @@ const BookingFlowIndicator = ({ currentStep, bookingType }) => {
   if (!bookingType || getCartCount() === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#152415]/95 backdrop-blur-lg border-t border-[#4A7C2E]/30 shadow-2xl">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#2A4A2A]/95 backdrop-blur-lg border-t border-[#5A9A3A]/30 shadow-2xl">
       <div className="max-w-screen-xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Progress Steps */}
@@ -96,10 +96,10 @@ const BookingFlowIndicator = ({ currentStep, bookingType }) => {
                     onClick={() => handleStepClick(step)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all whitespace-nowrap ${
                       status === 'current' 
-                        ? 'bg-[#4A7C2E] text-white' 
+                        ? 'bg-[#5A9A3A] text-white' 
                         : status === 'completed'
-                          ? 'bg-[#4A7C2E]/30 text-[#4A7C2E]'
-                          : 'bg-[#0D1A0D] text-[#9CA38B] hover:bg-[#1E2E1E]'
+                          ? 'bg-[#5A9A3A]/30 text-[#5A9A3A]'
+                          : 'bg-[#1E3A1E] text-[#B8C4A8] hover:bg-[#3A5A3A]'
                     }`}
                   >
                     {status === 'completed' ? (
@@ -113,7 +113,7 @@ const BookingFlowIndicator = ({ currentStep, bookingType }) => {
                     )}
                   </button>
                   {index < steps.length - 1 && (
-                    <Icon name="ChevronRight" size={16} className="text-[#4A7C2E]/50 flex-shrink-0" />
+                    <Icon name="ChevronRight" size={16} className="text-[#5A9A3A]/50 flex-shrink-0" />
                   )}
                 </React.Fragment>
               );
@@ -126,15 +126,15 @@ const BookingFlowIndicator = ({ currentStep, bookingType }) => {
             {currentStep !== 'checkout' && steps[currentStepIndex]?.optional && (
               <button
                 onClick={handleSkip}
-                className="text-sm text-[#9CA38B] hover:text-white transition-colors"
+                className="text-sm text-[#B8C4A8] hover:text-white transition-colors"
               >
                 Skip
               </button>
             )}
             
             {/* Cart Summary */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#0D1A0D] rounded-lg">
-              <Icon name="ShoppingCart" size={16} className="text-[#4A7C2E]" />
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#1E3A1E] rounded-lg">
+              <Icon name="ShoppingCart" size={16} className="text-[#5A9A3A]" />
               <span className="text-sm text-white">{getCartCount()} items</span>
             </div>
 
@@ -142,7 +142,7 @@ const BookingFlowIndicator = ({ currentStep, bookingType }) => {
             {currentStep !== 'checkout' ? (
               <button
                 onClick={() => navigate('/shopping-cart')}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] text-white rounded-lg font-medium text-sm hover:from-[#FFA07A] hover:to-[#FF8C5A] transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FF9E6D] to-[#FF6B35] text-white rounded-lg font-medium text-sm hover:from-[#FFA07A] hover:to-[#FF9E6D] transition-all"
               >
                 <span>View Cart</span>
                 <Icon name="ArrowRight" size={16} />
@@ -150,7 +150,7 @@ const BookingFlowIndicator = ({ currentStep, bookingType }) => {
             ) : (
               <button
                 onClick={() => document.getElementById('proceed-checkout-btn')?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white rounded-lg font-medium text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#5A9A3A] to-[#2D5016] text-white rounded-lg font-medium text-sm"
               >
                 <span>Proceed</span>
                 <Icon name="ArrowRight" size={16} />

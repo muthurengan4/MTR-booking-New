@@ -1,10 +1,11 @@
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from decimal import Decimal
 import uuid
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
@@ -14,8 +15,19 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
+import cloudinary.utils
 
 load_dotenv()
+
+# Cloudinary Configuration
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
+    secure=True
+)
 
 # Database Configuration - Using SQLite for portability
 DATABASE_PATH = os.environ.get("DATABASE_PATH", "/app/backend/mtr_bookinghub.db")
@@ -71,7 +83,8 @@ class RoomType(Base):
     base_price = Column(Numeric(10, 2), nullable=False)
     max_capacity = Column(Integer, default=2)
     amenities = Column(Text)  # JSON string
-    image_url = Column(String(500))
+    image_url = Column(String(500))  # Main/featured image
+    images = Column(Text)  # JSON array of image URLs for gallery
     location = Column(String(100))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -86,7 +99,8 @@ class ActivityType(Base):
     base_price = Column(Numeric(10, 2), nullable=False)
     max_capacity = Column(Integer, default=10)
     location = Column(String(100))
-    image_url = Column(String(500))
+    image_url = Column(String(500))  # Main/featured image
+    images = Column(Text)  # JSON array of image URLs for gallery
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
@@ -268,6 +282,7 @@ class RoomTypeResponse(BaseModel):
     max_capacity: int
     amenities: List[str]
     image_url: Optional[str]
+    images: List[str] = []
     location: Optional[str]
     is_active: bool
 
@@ -278,6 +293,7 @@ class RoomTypeCreate(BaseModel):
     max_capacity: int = 2
     amenities: List[str] = []
     image_url: Optional[str] = None
+    images: List[str] = []
     location: Optional[str] = None
     is_active: bool = True
 
@@ -290,6 +306,7 @@ class ActivityTypeResponse(BaseModel):
     max_capacity: int
     location: Optional[str]
     image_url: Optional[str]
+    images: List[str] = []
     is_active: bool
 
 class ActivityTypeCreate(BaseModel):
@@ -300,6 +317,7 @@ class ActivityTypeCreate(BaseModel):
     max_capacity: int = 10
     location: Optional[str] = None
     image_url: Optional[str] = None
+    images: List[str] = []
     is_active: bool = True
 
 class BookingResponse(BaseModel):
@@ -584,6 +602,56 @@ def admin_login(request: AdminLoginRequest, db: Session = Depends(get_db)):
 def verify_auth(payload: dict = Depends(verify_token)):
     return {"valid": True, "user_id": payload.get("sub")}
 
+# Cloudinary Image Upload Endpoints
+@app.get("/api/cloudinary/signature")
+def generate_cloudinary_signature(
+    resource_type: str = Query("image", enum=["image", "video"]),
+    folder: str = Query("mtr_uploads")
+):
+    """Generate a signed upload signature for Cloudinary"""
+    ALLOWED_FOLDERS = ("mtr_uploads", "rooms", "safaris", "products", "users")
+    
+    # Validate folder
+    folder_base = folder.split("/")[0] if "/" in folder else folder
+    if folder_base not in ALLOWED_FOLDERS:
+        raise HTTPException(status_code=400, detail=f"Invalid folder path. Allowed: {ALLOWED_FOLDERS}")
+    
+    timestamp = int(time.time())
+    params = {
+        "timestamp": timestamp,
+        "folder": folder,
+    }
+    
+    signature = cloudinary.utils.api_sign_request(
+        params,
+        os.environ.get("CLOUDINARY_API_SECRET")
+    )
+    
+    return {
+        "signature": signature,
+        "timestamp": timestamp,
+        "cloud_name": os.environ.get("CLOUDINARY_CLOUD_NAME"),
+        "api_key": os.environ.get("CLOUDINARY_API_KEY"),
+        "folder": folder,
+        "resource_type": resource_type
+    }
+
+@app.delete("/api/cloudinary/delete")
+def delete_cloudinary_image(
+    public_id: str = Query(..., description="The public ID of the image to delete"),
+    resource_type: str = Query("image", enum=["image", "video"]),
+    payload: dict = Depends(verify_token)
+):
+    """Delete an image from Cloudinary (admin only)"""
+    try:
+        result = cloudinary.uploader.destroy(public_id, resource_type=resource_type, invalidate=True)
+        if result.get("result") == "ok":
+            return {"success": True, "message": "Image deleted successfully"}
+        else:
+            return {"success": False, "message": "Image not found or already deleted"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete image: {str(e)}")
+
 # Room Types Endpoints
 @app.get("/api/room-types", response_model=List[RoomTypeResponse])
 def get_room_types(active_only: bool = False, db: Session = Depends(get_db)):
@@ -600,6 +668,7 @@ def get_room_types(active_only: bool = False, db: Session = Depends(get_db)):
             max_capacity=r.max_capacity,
             amenities=parse_json_field(r.amenities),
             image_url=r.image_url,
+            images=parse_json_field(r.images) if r.images else [],
             location=r.location,
             is_active=r.is_active
         ) for r in rooms
@@ -614,6 +683,7 @@ def create_room_type(room: RoomTypeCreate, db: Session = Depends(get_db), _: dic
         max_capacity=room.max_capacity,
         amenities=serialize_json_field(room.amenities),
         image_url=room.image_url,
+        images=serialize_json_field(room.images) if room.images else None,
         location=room.location,
         is_active=room.is_active
     )
@@ -628,6 +698,7 @@ def create_room_type(room: RoomTypeCreate, db: Session = Depends(get_db), _: dic
         max_capacity=db_room.max_capacity,
         amenities=parse_json_field(db_room.amenities),
         image_url=db_room.image_url,
+        images=parse_json_field(db_room.images) if db_room.images else [],
         location=db_room.location,
         is_active=db_room.is_active
     )
@@ -644,6 +715,7 @@ def update_room_type(room_id: str, room: RoomTypeCreate, db: Session = Depends(g
     db_room.max_capacity = room.max_capacity
     db_room.amenities = serialize_json_field(room.amenities)
     db_room.image_url = room.image_url
+    db_room.images = serialize_json_field(room.images) if room.images else None
     db_room.location = room.location
     db_room.is_active = room.is_active
     db.commit()
@@ -657,6 +729,7 @@ def update_room_type(room_id: str, room: RoomTypeCreate, db: Session = Depends(g
         max_capacity=db_room.max_capacity,
         amenities=parse_json_field(db_room.amenities),
         image_url=db_room.image_url,
+        images=parse_json_field(db_room.images) if db_room.images else [],
         location=db_room.location,
         is_active=db_room.is_active
     )
@@ -687,6 +760,7 @@ def get_activity_types(active_only: bool = False, db: Session = Depends(get_db))
             max_capacity=a.max_capacity,
             location=a.location,
             image_url=a.image_url,
+            images=parse_json_field(a.images) if a.images else [],
             is_active=a.is_active
         ) for a in activities
     ]
@@ -701,6 +775,7 @@ def create_activity_type(activity: ActivityTypeCreate, db: Session = Depends(get
         max_capacity=activity.max_capacity,
         location=activity.location,
         image_url=activity.image_url,
+        images=serialize_json_field(activity.images) if activity.images else None,
         is_active=activity.is_active
     )
     db.add(db_activity)
@@ -715,6 +790,7 @@ def create_activity_type(activity: ActivityTypeCreate, db: Session = Depends(get
         max_capacity=db_activity.max_capacity,
         location=db_activity.location,
         image_url=db_activity.image_url,
+        images=parse_json_field(db_activity.images) if db_activity.images else [],
         is_active=db_activity.is_active
     )
 
@@ -731,6 +807,7 @@ def update_activity_type(activity_id: str, activity: ActivityTypeCreate, db: Ses
     db_activity.max_capacity = activity.max_capacity
     db_activity.location = activity.location
     db_activity.image_url = activity.image_url
+    db_activity.images = serialize_json_field(activity.images) if activity.images else None
     db_activity.is_active = activity.is_active
     db.commit()
     db.refresh(db_activity)
@@ -744,6 +821,7 @@ def update_activity_type(activity_id: str, activity: ActivityTypeCreate, db: Ses
         max_capacity=db_activity.max_capacity,
         location=db_activity.location,
         image_url=db_activity.image_url,
+        images=parse_json_field(db_activity.images) if db_activity.images else [],
         is_active=db_activity.is_active
     )
 

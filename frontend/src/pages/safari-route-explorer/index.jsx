@@ -106,7 +106,7 @@ const SafariRouteExplorer = () => {
       icon: 'Truck',
       color: '#2D5016',
       gradientFrom: '#2D5016',
-      gradientTo: '#4A7C2E',
+      gradientTo: '#5A9A3A',
       duration: '3-4 hours',
       distance: '25 km',
       difficulty: 'Moderate',
@@ -180,7 +180,7 @@ const SafariRouteExplorer = () => {
       icon: 'Footprints',
       color: '#FF6B35',
       gradientFrom: '#FF6B35',
-      gradientTo: '#FF8C5A',
+      gradientTo: '#FF9E6D',
       duration: '1.5-2 hours',
       distance: '5 km',
       difficulty: 'Easy',
@@ -290,7 +290,7 @@ const SafariRouteExplorer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D1A0D]" data-testid="safari-route-explorer">
+    <div className="min-h-screen bg-[#1E3A1E]" data-testid="safari-route-explorer">
       <Header />
       
       <main className="pt-[88px]">
@@ -301,14 +301,14 @@ const SafariRouteExplorer = () => {
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#4A7C2E] to-[#2D5016] rounded-2xl flex items-center justify-center shadow-lg shadow-[#4A7C2E]/30">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#5A9A3A] to-[#2D5016] rounded-2xl flex items-center justify-center shadow-lg shadow-[#5A9A3A]/30">
                     <Icon name="Compass" size={28} className="text-white" />
                   </div>
                   <div>
                     <h1 className="font-heading font-bold text-3xl md:text-4xl lg:text-5xl text-white">
                       Safari Route Explorer
                     </h1>
-                    <p className="text-[#9CA38B] text-sm md:text-base">
+                    <p className="text-[#B8C4A8] text-sm md:text-base">
                       Interactive maps • Real-time routes • Wildlife hotspots
                     </p>
                   </div>
@@ -320,7 +320,7 @@ const SafariRouteExplorer = () => {
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
                   isAnimating 
                     ? 'bg-gray-600 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-[#FF8C5A] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF8C5A] text-white shadow-lg shadow-[#FF8C5A]/30 hover:shadow-xl'
+                    : 'bg-gradient-to-r from-[#FF9E6D] to-[#FF6B35] hover:from-[#FFA07A] hover:to-[#FF9E6D] text-white shadow-lg shadow-[#FF9E6D]/30 hover:shadow-xl'
                 }`}
               >
                 <Icon name={isAnimating ? "Loader2" : "Play"} size={20} className={isAnimating ? "animate-spin" : ""} />
@@ -342,24 +342,24 @@ const SafariRouteExplorer = () => {
                 }}
                 className={`relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 group ${
                   selectedRoute === route.id
-                    ? 'ring-2 ring-offset-2 ring-offset-[#0D1A0D]'
+                    ? 'ring-2 ring-offset-2 ring-offset-[#1E3A1E]'
                     : 'hover:scale-[1.02]'
                 }`}
                 style={{
                   background: selectedRoute === route.id 
                     ? `linear-gradient(135deg, ${route.gradientFrom}, ${route.gradientTo})`
-                    : '#152415',
+                    : '#2A4A2A',
                   ringColor: route.color
                 }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    selectedRoute === route.id ? 'bg-white/20' : 'bg-[#4A7C2E]/20'
+                    selectedRoute === route.id ? 'bg-white/20' : 'bg-[#5A9A3A]/20'
                   }`}>
                     <Icon 
                       name={route.icon} 
                       size={24} 
-                      className={selectedRoute === route.id ? 'text-white' : 'text-[#4A7C2E]'}
+                      className={selectedRoute === route.id ? 'text-white' : 'text-[#5A9A3A]'}
                     />
                   </div>
                   {selectedRoute === route.id && (
@@ -374,23 +374,23 @@ const SafariRouteExplorer = () => {
                   {route.name.split(' - ')[0]}
                 </h3>
                 <p className={`text-sm mb-3 ${
-                  selectedRoute === route.id ? 'text-white/80' : 'text-[#9CA38B]'
+                  selectedRoute === route.id ? 'text-white/80' : 'text-[#B8C4A8]'
                 }`}>
                   {route.name.split(' - ')[1] || route.terrain}
                 </p>
                 <div className="flex items-center gap-4 text-xs">
                   <span className={`flex items-center gap-1 ${
-                    selectedRoute === route.id ? 'text-white/70' : 'text-[#9CA38B]'
+                    selectedRoute === route.id ? 'text-white/70' : 'text-[#B8C4A8]'
                   }`}>
                     <Icon name="Clock" size={14} /> {route.duration}
                   </span>
                   <span className={`flex items-center gap-1 ${
-                    selectedRoute === route.id ? 'text-white/70' : 'text-[#9CA38B]'
+                    selectedRoute === route.id ? 'text-white/70' : 'text-[#B8C4A8]'
                   }`}>
                     <Icon name="Route" size={14} /> {route.distance}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    selectedRoute === route.id ? 'bg-white/20 text-white' : 'bg-[#4A7C2E]/20 text-[#4A7C2E]'
+                    selectedRoute === route.id ? 'bg-white/20 text-white' : 'bg-[#5A9A3A]/20 text-[#5A9A3A]'
                   }`}>
                     ₹{route.price}
                   </span>
@@ -402,7 +402,7 @@ const SafariRouteExplorer = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Interactive Map - Takes 3 columns */}
             <div className="lg:col-span-3">
-              <div className="bg-[#152415] rounded-2xl overflow-hidden border border-[#4A7C2E]/30 shadow-2xl">
+              <div className="bg-[#2A4A2A] rounded-2xl overflow-hidden border border-[#5A9A3A]/30 shadow-2xl">
                 <div className="relative h-[500px] md:h-[600px]">
                   <MapContainer
                     center={mapCenter}
@@ -503,7 +503,7 @@ const SafariRouteExplorer = () => {
                   </MapContainer>
 
                   {/* Map Overlay - Route Info */}
-                  <div className="absolute top-4 left-4 bg-[#152415]/95 backdrop-blur-sm rounded-xl p-4 shadow-lg z-[1000] border border-[#4A7C2E]/30 max-w-xs">
+                  <div className="absolute top-4 left-4 bg-[#2A4A2A]/95 backdrop-blur-sm rounded-xl p-4 shadow-lg z-[1000] border border-[#5A9A3A]/30 max-w-xs">
                     <div className="flex items-center gap-3 mb-2">
                       <div 
                         className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -513,12 +513,12 @@ const SafariRouteExplorer = () => {
                       </div>
                       <div>
                         <h3 className="font-heading font-bold text-white text-sm">{currentRoute.name.split(' - ')[0]}</h3>
-                        <p className="text-xs text-[#9CA38B]">{currentRoute.waypoints.length} stops</p>
+                        <p className="text-xs text-[#B8C4A8]">{currentRoute.waypoints.length} stops</p>
                       </div>
                     </div>
                     {isAnimating && (
                       <div className="mt-2">
-                        <div className="h-1.5 bg-[#0D1A0D] rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-[#1E3A1E] rounded-full overflow-hidden">
                           <div 
                             className="h-full rounded-full transition-all duration-100"
                             style={{ 
@@ -527,7 +527,7 @@ const SafariRouteExplorer = () => {
                             }}
                           />
                         </div>
-                        <p className="text-xs text-[#9CA38B] mt-1 text-center">
+                        <p className="text-xs text-[#B8C4A8] mt-1 text-center">
                           {Math.round(animationProgress * 100)}% complete
                         </p>
                       </div>
@@ -539,8 +539,8 @@ const SafariRouteExplorer = () => {
                     onClick={() => setShowWildlifeZones(!showWildlifeZones)}
                     className={`absolute top-4 right-4 flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg z-[1000] transition-all ${
                       showWildlifeZones 
-                        ? 'bg-[#4A7C2E] text-white' 
-                        : 'bg-[#152415]/95 text-[#9CA38B] border border-[#4A7C2E]/30'
+                        ? 'bg-[#5A9A3A] text-white' 
+                        : 'bg-[#2A4A2A]/95 text-[#B8C4A8] border border-[#5A9A3A]/30'
                     }`}
                   >
                     <Icon name="Binoculars" size={18} />
@@ -548,13 +548,13 @@ const SafariRouteExplorer = () => {
                   </button>
 
                   {/* Legend */}
-                  <div className="absolute bottom-4 left-4 bg-[#152415]/95 backdrop-blur-sm rounded-xl p-3 shadow-lg z-[1000] border border-[#4A7C2E]/30">
-                    <p className="text-xs font-semibold text-[#4A7C2E] mb-2">Wildlife Hotspots</p>
+                  <div className="absolute bottom-4 left-4 bg-[#2A4A2A]/95 backdrop-blur-sm rounded-xl p-3 shadow-lg z-[1000] border border-[#5A9A3A]/30">
+                    <p className="text-xs font-semibold text-[#5A9A3A] mb-2">Wildlife Hotspots</p>
                     <div className="space-y-1.5">
                       {wildlifeZones.map(zone => (
                         <div key={zone.id} className="flex items-center gap-2 text-xs">
                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: zone.color }} />
-                          <span className="text-[#9CA38B]">{zone.name.split(' ')[0]}</span>
+                          <span className="text-[#B8C4A8]">{zone.name.split(' ')[0]}</span>
                         </div>
                       ))}
                     </div>
@@ -563,10 +563,10 @@ const SafariRouteExplorer = () => {
               </div>
 
               {/* Journey Timeline */}
-              <div className="mt-6 bg-[#152415] rounded-2xl p-6 border border-[#4A7C2E]/30">
+              <div className="mt-6 bg-[#2A4A2A] rounded-2xl p-6 border border-[#5A9A3A]/30">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-[#4A7C2E]/20 rounded-xl flex items-center justify-center">
-                    <Icon name="Route" size={20} className="text-[#4A7C2E]" />
+                  <div className="w-10 h-10 bg-[#5A9A3A]/20 rounded-xl flex items-center justify-center">
+                    <Icon name="Route" size={20} className="text-[#5A9A3A]" />
                   </div>
                   <h3 className="font-heading font-bold text-xl text-white">Journey Timeline</h3>
                 </div>
@@ -601,19 +601,19 @@ const SafariRouteExplorer = () => {
                         
                         <div className={`flex-1 p-4 rounded-xl transition-all ${
                           selectedWaypoint?.name === waypoint.name 
-                            ? 'bg-[#4A7C2E]/20 border border-[#4A7C2E]/50' 
-                            : 'bg-[#0D1A0D] hover:bg-[#1E2E1E]'
+                            ? 'bg-[#5A9A3A]/20 border border-[#5A9A3A]/50' 
+                            : 'bg-[#1E3A1E] hover:bg-[#3A5A3A]'
                         }`}>
                           <div className="flex items-start justify-between mb-2">
                             <h4 className="font-heading font-semibold text-white">{waypoint.name}</h4>
-                            <span className="px-3 py-1 bg-[#4A7C2E]/20 text-[#4A7C2E] text-xs font-semibold rounded-full">
+                            <span className="px-3 py-1 bg-[#5A9A3A]/20 text-[#5A9A3A] text-xs font-semibold rounded-full">
                               {waypoint.time}
                             </span>
                           </div>
-                          <p className="text-sm text-[#9CA38B] mb-2">{waypoint.description}</p>
-                          <div className="flex items-center gap-4 text-xs text-[#9CA38B]">
+                          <p className="text-sm text-[#B8C4A8] mb-2">{waypoint.description}</p>
+                          <div className="flex items-center gap-4 text-xs text-[#B8C4A8]">
                             <span className="flex items-center gap-1">
-                              <Icon name="Mountain" size={14} className="text-[#FF8C5A]" />
+                              <Icon name="Mountain" size={14} className="text-[#FF9E6D]" />
                               {waypoint.elevation}m elevation
                             </span>
                           </div>
@@ -628,15 +628,15 @@ const SafariRouteExplorer = () => {
             {/* Right Sidebar */}
             <div className="space-y-6">
               {/* Route Details Card */}
-              <div className="bg-[#152415] rounded-2xl p-6 border border-[#4A7C2E]/30">
+              <div className="bg-[#2A4A2A] rounded-2xl p-6 border border-[#5A9A3A]/30">
                 <h3 className="font-heading font-bold text-lg text-white mb-4">Route Details</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#4A7C2E]/20 rounded-lg flex items-center justify-center">
-                      <Icon name="Clock" size={18} className="text-[#4A7C2E]" />
+                    <div className="w-10 h-10 bg-[#5A9A3A]/20 rounded-lg flex items-center justify-center">
+                      <Icon name="Clock" size={18} className="text-[#5A9A3A]" />
                     </div>
                     <div>
-                      <p className="text-xs text-[#9CA38B]">Duration</p>
+                      <p className="text-xs text-[#B8C4A8]">Duration</p>
                       <p className="text-white font-semibold">{currentRoute.duration}</p>
                     </div>
                   </div>
@@ -645,25 +645,25 @@ const SafariRouteExplorer = () => {
                       <Icon name="Route" size={18} className="text-[#A0522D]" />
                     </div>
                     <div>
-                      <p className="text-xs text-[#9CA38B]">Distance</p>
+                      <p className="text-xs text-[#B8C4A8]">Distance</p>
                       <p className="text-white font-semibold">{currentRoute.distance}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#FF8C5A]/20 rounded-lg flex items-center justify-center">
-                      <Icon name="TrendingUp" size={18} className="text-[#FF8C5A]" />
+                    <div className="w-10 h-10 bg-[#FF9E6D]/20 rounded-lg flex items-center justify-center">
+                      <Icon name="TrendingUp" size={18} className="text-[#FF9E6D]" />
                     </div>
                     <div>
-                      <p className="text-xs text-[#9CA38B]">Difficulty</p>
+                      <p className="text-xs text-[#B8C4A8]">Difficulty</p>
                       <p className="text-white font-semibold">{currentRoute.difficulty}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#4A7C2E]/20 rounded-lg flex items-center justify-center">
-                      <Icon name="Users" size={18} className="text-[#4A7C2E]" />
+                    <div className="w-10 h-10 bg-[#5A9A3A]/20 rounded-lg flex items-center justify-center">
+                      <Icon name="Users" size={18} className="text-[#5A9A3A]" />
                     </div>
                     <div>
-                      <p className="text-xs text-[#9CA38B]">Max Capacity</p>
+                      <p className="text-xs text-[#B8C4A8]">Max Capacity</p>
                       <p className="text-white font-semibold">{currentRoute.maxCapacity} people</p>
                     </div>
                   </div>
@@ -672,7 +672,7 @@ const SafariRouteExplorer = () => {
                       <Icon name="Sun" size={18} className="text-[#F59E0B]" />
                     </div>
                     <div>
-                      <p className="text-xs text-[#9CA38B]">Best Time</p>
+                      <p className="text-xs text-[#B8C4A8]">Best Time</p>
                       <p className="text-white font-semibold">{currentRoute.bestTime}</p>
                     </div>
                   </div>
@@ -680,15 +680,15 @@ const SafariRouteExplorer = () => {
               </div>
 
               {/* Highlights Card */}
-              <div className="bg-[#152415] rounded-2xl p-6 border border-[#4A7C2E]/30">
+              <div className="bg-[#2A4A2A] rounded-2xl p-6 border border-[#5A9A3A]/30">
                 <h3 className="font-heading font-bold text-lg text-white mb-4">Highlights</h3>
                 <div className="space-y-2">
                   {currentRoute.highlights.map((highlight, index) => (
-                    <div key={index} className="flex items-center gap-3 p-2 bg-[#0D1A0D] rounded-lg">
+                    <div key={index} className="flex items-center gap-3 p-2 bg-[#1E3A1E] rounded-lg">
                       <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
                         <Icon name="Check" size={14} className="text-green-400" />
                       </div>
-                      <span className="text-sm text-[#9CA38B]">{highlight}</span>
+                      <span className="text-sm text-[#B8C4A8]">{highlight}</span>
                     </div>
                   ))}
                 </div>
@@ -818,22 +818,22 @@ const SafariRouteExplorer = () => {
               
               {/* Cart Summary */}
               {getCartCount() > 0 && (
-                <div className="bg-[#152415] rounded-2xl p-4 border border-[#4A7C2E]/30">
+                <div className="bg-[#2A4A2A] rounded-2xl p-4 border border-[#5A9A3A]/30">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[#9CA38B] text-sm">Items in cart</span>
+                    <span className="text-[#B8C4A8] text-sm">Items in cart</span>
                     <span className="text-white font-bold">{getCartCount()}</span>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => navigate('/e-shop')}
-                      className="flex-1 py-2 bg-[#4A7C2E]/20 hover:bg-[#4A7C2E]/30 text-[#4A7C2E] rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
+                      className="flex-1 py-2 bg-[#5A9A3A]/20 hover:bg-[#5A9A3A]/30 text-[#5A9A3A] rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
                     >
                       <Icon name="ShoppingBag" size={14} />
                       Souvenirs
                     </button>
                     <button
                       onClick={() => navigate('/shopping-cart')}
-                      className="flex-1 py-2 bg-[#FF8C5A]/20 hover:bg-[#FF8C5A]/30 text-[#FF8C5A] rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
+                      className="flex-1 py-2 bg-[#FF9E6D]/20 hover:bg-[#FF9E6D]/30 text-[#FF9E6D] rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
                     >
                       <Icon name="ShoppingCart" size={14} />
                       View Cart
@@ -844,7 +844,7 @@ const SafariRouteExplorer = () => {
 
               {/* Selected Zone Info */}
               {selectedZone && (
-                <div className="bg-[#152415] rounded-2xl p-6 border-2" style={{ borderColor: selectedZone.color }}>
+                <div className="bg-[#2A4A2A] rounded-2xl p-6 border-2" style={{ borderColor: selectedZone.color }}>
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="font-heading font-bold text-lg text-white">{selectedZone.name}</h3>
@@ -857,25 +857,25 @@ const SafariRouteExplorer = () => {
                     </div>
                     <button 
                       onClick={() => setSelectedZone(null)}
-                      className="p-1 hover:bg-[#0D1A0D] rounded-lg transition-colors"
+                      className="p-1 hover:bg-[#1E3A1E] rounded-lg transition-colors"
                     >
-                      <Icon name="X" size={18} className="text-[#9CA38B]" />
+                      <Icon name="X" size={18} className="text-[#B8C4A8]" />
                     </button>
                   </div>
-                  <p className="text-sm text-[#9CA38B] mb-4">{selectedZone.description}</p>
+                  <p className="text-sm text-[#B8C4A8] mb-4">{selectedZone.description}</p>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-xs text-[#4A7C2E] font-semibold mb-2">Species Found</p>
+                      <p className="text-xs text-[#5A9A3A] font-semibold mb-2">Species Found</p>
                       <div className="flex flex-wrap gap-1">
                         {selectedZone.species.map((species, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-[#0D1A0D] text-[#9CA38B] text-xs rounded-full">
+                          <span key={idx} className="px-2 py-1 bg-[#1E3A1E] text-[#B8C4A8] text-xs rounded-full">
                             {species}
                           </span>
                         ))}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-[#9CA38B]">
-                      <Icon name="Clock" size={14} className="text-[#4A7C2E]" />
+                    <div className="flex items-center gap-2 text-sm text-[#B8C4A8]">
+                      <Icon name="Clock" size={14} className="text-[#5A9A3A]" />
                       {selectedZone.bestTime}
                     </div>
                   </div>

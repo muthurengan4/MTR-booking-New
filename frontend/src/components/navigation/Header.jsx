@@ -70,15 +70,15 @@ const Header = () => {
       {/* Dark naturalistic header */}
       <div className="relative">
         {/* Gradient stripe at top */}
-        <div className="h-1 bg-gradient-to-r from-[#2D5016] via-[#4A7C2E] via-40% via-[#8B4513] via-70% to-[#FF8C5A]" />
+        <div className="h-1 bg-gradient-to-r from-[#2D5016] via-[#5A9A3A] via-40% via-[#8B4513] via-70% to-[#FF9E6D]" />
         
         {/* Main header with glass effect */}
-        <div className="bg-[#0D1A0D]/95 backdrop-blur-md border-b border-[#4A7C2E]/30 shadow-lg shadow-black/20">
+        <div className="bg-[#1E3A1E]/95 backdrop-blur-md border-b border-[#5A9A3A]/30 shadow-lg shadow-black/20">
           <div className="max-w-screen-2xl mx-auto">
             <div className="flex items-center justify-between h-20 px-6">
               <div className="flex items-center gap-8">
                 <Link to="/home-landing" className="flex items-center gap-3 transition-organic hover-lift">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden transition-organic bg-white/90 shadow-lg shadow-[#4A7C2E]/20">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden transition-organic bg-white/90 shadow-lg shadow-[#5A9A3A]/20">
                     <Image 
                       src="/assets/images/MTR-1769601441831.png" 
                       alt="Mudumalai Tiger Reserve Logo" 
@@ -86,8 +86,8 @@ const Header = () => {
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-heading font-bold text-xl text-[#4A7C2E]">Mudumalai Tiger Reserve</span>
-                    <span className="text-caption text-[#FF8C5A] text-xs font-medium">Where Wildlife Thrives</span>
+                    <span className="font-heading font-bold text-xl text-[#5A9A3A]">Mudumalai Tiger Reserve</span>
+                    <span className="text-caption text-[#FF9E6D] text-xs font-medium">Where Wildlife Thrives</span>
                   </div>
                 </Link>
 
@@ -99,8 +99,8 @@ const Header = () => {
                       onClick={(e) => handleNavClick(item, e)}
                       className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-organic ${
                         isActivePath(item?.path)
-                          ? 'bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white shadow-lg shadow-[#4A7C2E]/30'
-                          : 'text-[#9CA38B] hover:text-[#4A7C2E] hover:bg-[#4A7C2E]/10'
+                          ? 'bg-gradient-to-r from-[#5A9A3A] to-[#2D5016] text-white shadow-lg shadow-[#5A9A3A]/30'
+                          : 'text-[#B8C4A8] hover:text-[#5A9A3A] hover:bg-[#5A9A3A]/10'
                       }`}
                     >
                       <Icon name={item?.icon} size={18} strokeWidth={2} />
@@ -113,12 +113,12 @@ const Header = () => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleCartClick}
-                  className="relative p-3 rounded-lg transition-organic hover:bg-[#4A7C2E]/20 text-[#9CA38B] hover:text-[#4A7C2E]"
+                  className="relative p-3 rounded-lg transition-organic hover:bg-[#5A9A3A]/20 text-[#B8C4A8] hover:text-[#5A9A3A]"
                   aria-label="Shopping cart"
                 >
                   <Icon name="ShoppingCart" size={22} strokeWidth={2} />
                   {cartItemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF8C5A] text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF9E6D] text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
                       {cartItemCount}
                     </span>
                   )}
@@ -127,25 +127,25 @@ const Header = () => {
                 <div className="relative">
                   <button
                     onClick={toggleAccountMenu}
-                    className="flex items-center gap-2 p-3 rounded-lg transition-organic hover:bg-[#4A7C2E]/20 text-[#9CA38B] hover:text-[#4A7C2E]"
+                    className="flex items-center gap-2 p-3 rounded-lg transition-organic hover:bg-[#5A9A3A]/20 text-[#B8C4A8] hover:text-[#5A9A3A]"
                     aria-label="User account"
                   >
                     <Icon name={isAuthenticated ? 'User' : 'UserCircle'} size={22} strokeWidth={2} />
                   </button>
 
                   {accountMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-[#1A2D1A] rounded-xl shadow-xl shadow-black/30 border border-[#4A7C2E]/30 overflow-hidden z-50">
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-[#345834] rounded-xl shadow-xl shadow-black/30 border border-[#5A9A3A]/30 overflow-hidden z-50">
                       {isAuthenticated ? (
                         <>
                           <button
                             onClick={handleDashboardClick}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-[#E0DCD7] hover:bg-[#4A7C2E]/20 transition-organic"
+                            className="w-full flex items-center gap-3 px-4 py-3 text-[#E0DCD7] hover:bg-[#5A9A3A]/20 transition-organic"
                           >
                             <Icon name="LayoutDashboard" size={18} />
                             <span>Dashboard</span>
                           </button>
                           <button
-                            className="w-full flex items-center gap-3 px-4 py-3 text-[#E0DCD7] hover:bg-[#4A7C2E]/20 transition-organic"
+                            className="w-full flex items-center gap-3 px-4 py-3 text-[#E0DCD7] hover:bg-[#5A9A3A]/20 transition-organic"
                           >
                             <Icon name="LogOut" size={18} />
                             <span>Logout</span>
@@ -155,14 +155,14 @@ const Header = () => {
                         <>
                           <Link
                             to="/admin/login"
-                            className="w-full flex items-center gap-3 px-4 py-3 text-[#E0DCD7] hover:bg-[#4A7C2E]/20 transition-organic"
+                            className="w-full flex items-center gap-3 px-4 py-3 text-[#E0DCD7] hover:bg-[#5A9A3A]/20 transition-organic"
                           >
                             <Icon name="Shield" size={18} />
                             <span>Admin Login</span>
                           </Link>
                           <button
                             onClick={handleDashboardClick}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-[#E0DCD7] hover:bg-[#4A7C2E]/20 transition-organic"
+                            className="w-full flex items-center gap-3 px-4 py-3 text-[#E0DCD7] hover:bg-[#5A9A3A]/20 transition-organic"
                           >
                             <Icon name="User" size={18} />
                             <span>Guest Dashboard</span>
@@ -175,7 +175,7 @@ const Header = () => {
 
                 <button
                   onClick={toggleMobileMenu}
-                  className="lg:hidden p-3 rounded-lg transition-organic hover:bg-[#4A7C2E]/20 text-[#9CA38B] hover:text-[#4A7C2E]"
+                  className="lg:hidden p-3 rounded-lg transition-organic hover:bg-[#5A9A3A]/20 text-[#B8C4A8] hover:text-[#5A9A3A]"
                   aria-label="Toggle mobile menu"
                 >
                   <Icon name={mobileMenuOpen ? 'X' : 'Menu'} size={24} strokeWidth={2} />
@@ -193,7 +193,7 @@ const Header = () => {
             className="fixed inset-0 bg-black/60 z-40 lg:hidden"
             onClick={toggleMobileMenu}
           />
-          <div className="fixed top-[85px] left-0 right-0 bottom-0 bg-[#0D1A0D] z-50 lg:hidden overflow-y-auto border-t border-[#4A7C2E]/30">
+          <div className="fixed top-[85px] left-0 right-0 bottom-0 bg-[#1E3A1E] z-50 lg:hidden overflow-y-auto border-t border-[#5A9A3A]/30">
             <nav className="p-6 space-y-2">
               {navigationItems?.map((item) => (
                 <Link
@@ -205,8 +205,8 @@ const Header = () => {
                   }}
                   className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-organic ${
                     isActivePath(item?.path)
-                      ? 'bg-gradient-to-r from-[#4A7C2E] to-[#2D5016] text-white'
-                      : 'text-[#9CA38B] hover:bg-[#4A7C2E]/20 hover:text-[#4A7C2E]'
+                      ? 'bg-gradient-to-r from-[#5A9A3A] to-[#2D5016] text-white'
+                      : 'text-[#B8C4A8] hover:bg-[#5A9A3A]/20 hover:text-[#5A9A3A]'
                   }`}
                 >
                   <Icon name={item?.icon} size={24} strokeWidth={2} />

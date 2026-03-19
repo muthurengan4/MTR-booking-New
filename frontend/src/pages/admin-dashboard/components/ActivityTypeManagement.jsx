@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import ImageUpload from '../../../components/ImageUpload';
 import { activityTypesAPI } from '../../../lib/api';
 
 const ActivityTypeManagement = () => {
@@ -17,6 +18,7 @@ const ActivityTypeManagement = () => {
     max_capacity: '',
     location: '',
     image_url: '',
+    images: [],
     is_active: true
   });
 
@@ -46,6 +48,7 @@ const ActivityTypeManagement = () => {
       max_capacity: '',
       location: '',
       image_url: '',
+      images: [],
       is_active: true
     });
   };
@@ -60,6 +63,7 @@ const ActivityTypeManagement = () => {
       max_capacity: type?.max_capacity || '',
       location: type?.location || '',
       image_url: type?.image_url || '',
+      images: type?.images || [],
       is_active: type?.is_active ?? true
     });
   };
@@ -75,12 +79,18 @@ const ActivityTypeManagement = () => {
       max_capacity: '',
       location: '',
       image_url: '',
+      images: [],
       is_active: true
     });
   };
 
   const handleSave = async () => {
     try {
+      // Use first uploaded image as main image_url if available
+      const mainImageUrl = formData?.images?.length > 0 
+        ? formData.images[0] 
+        : formData?.image_url;
+
       const payload = {
         name: formData?.name,
         description: formData?.description,
@@ -88,7 +98,8 @@ const ActivityTypeManagement = () => {
         base_price: parseFloat(formData?.base_price),
         max_capacity: parseInt(formData?.max_capacity),
         location: formData?.location,
-        image_url: formData?.image_url,
+        image_url: mainImageUrl,
+        images: formData?.images || [],
         is_active: formData?.is_active
       };
 
@@ -142,18 +153,18 @@ const ActivityTypeManagement = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="font-heading text-2xl font-semibold text-foreground">Activity Type Management</h2>
+          <h2 className="font-heading text-2xl font-semibold text-foreground">Safari & Activity Management</h2>
           <p className="text-muted-foreground">Add, edit, and manage safari and activity types</p>
         </div>
         <Button onClick={handleCreate} iconName="Plus" data-testid="add-activity-type-btn">
-          Add Activity Type
+          Add Safari/Activity
         </Button>
       </div>
 
       {(isCreating || editingType) && (
         <div className="bg-muted rounded-lg border border-border p-6">
           <h3 className="font-heading text-xl font-semibold text-foreground mb-4">
-            {isCreating ? 'Create New Activity Type' : 'Edit Activity Type'}
+            {isCreating ? 'Create New Safari/Activity' : 'Edit Safari/Activity'}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
@@ -188,12 +199,6 @@ const ActivityTypeManagement = () => {
               onChange={(e) => setFormData({ ...formData, location: e?.target?.value })}
               placeholder="e.g., Mudumalai Core Zone"
             />
-            <Input
-              label="Image URL"
-              value={formData?.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e?.target?.value })}
-              placeholder="https://example.com/image.jpg"
-            />
             <div className="md:col-span-2">
               <Input
                 label="Description"
@@ -202,15 +207,35 @@ const ActivityTypeManagement = () => {
                 placeholder="Thrilling wildlife safari experience"
               />
             </div>
+            <div className="md:col-span-2">
+              <ImageUpload
+                images={formData?.images || []}
+                onImagesChange={(images) => setFormData({ ...formData, images })}
+                folder="safaris"
+                maxImages={10}
+                label="Safari/Activity Images (Gallery)"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Or enter Image URL manually"
+                value={formData?.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e?.target?.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Note: Uploaded images above will override this URL
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="is_active"
+                id="is_active_activity"
                 checked={formData?.is_active}
                 onChange={(e) => setFormData({ ...formData, is_active: e?.target?.checked })}
                 className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
               />
-              <label htmlFor="is_active" className="text-sm text-foreground">
+              <label htmlFor="is_active_activity" className="text-sm text-foreground">
                 Active
               </label>
             </div>
@@ -233,13 +258,33 @@ const ActivityTypeManagement = () => {
             className="bg-muted rounded-lg border border-border p-4 transition-organic hover:shadow-md"
           >
             <div className="flex flex-col md:flex-row gap-4">
-              {type?.image_url && (
-                <img
-                  src={type?.image_url}
-                  alt={type?.name}
-                  className="w-full md:w-32 h-32 object-cover rounded-lg"
-                />
-              )}
+              {/* Image Gallery Preview */}
+              <div className="flex gap-2 w-full md:w-auto">
+                {type?.image_url && (
+                  <img
+                    src={type?.image_url}
+                    alt={type?.name}
+                    className="w-full md:w-32 h-32 object-cover rounded-lg"
+                  />
+                )}
+                {type?.images?.length > 1 && (
+                  <div className="hidden md:flex flex-col gap-1">
+                    {type.images.slice(1, 4).map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt={`${type?.name} ${idx + 2}`}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                    ))}
+                    {type.images.length > 4 && (
+                      <div className="w-10 h-10 bg-primary/20 rounded flex items-center justify-center text-xs text-primary">
+                        +{type.images.length - 4}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="font-semibold text-foreground text-lg">{type?.name}</span>
@@ -270,6 +315,12 @@ const ActivityTypeManagement = () => {
                     <div className="flex items-center gap-1">
                       <Icon name="MapPin" size={16} />
                       <span>{type?.location}</span>
+                    </div>
+                  )}
+                  {type?.images?.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Icon name="Image" size={16} />
+                      <span>{type.images.length} photos</span>
                     </div>
                   )}
                 </div>
@@ -308,9 +359,9 @@ const ActivityTypeManagement = () => {
       {activityTypes?.length === 0 && (
         <div className="text-center py-12">
           <Icon name="Compass" size={48} className="mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground mb-4">No activity types found</p>
+          <p className="text-muted-foreground mb-4">No safaris or activities found</p>
           <Button onClick={handleCreate} iconName="Plus">
-            Add Your First Activity Type
+            Add Your First Safari/Activity
           </Button>
         </div>
       )}

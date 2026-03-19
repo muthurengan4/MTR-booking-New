@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import ImageUpload from '../../../components/ImageUpload';
 import { roomTypesAPI } from '../../../lib/api';
 
 const RoomTypeManagement = () => {
@@ -16,6 +17,7 @@ const RoomTypeManagement = () => {
     max_capacity: '',
     amenities: '',
     image_url: '',
+    images: [],
     location: '',
     is_active: true
   });
@@ -45,6 +47,7 @@ const RoomTypeManagement = () => {
       max_capacity: '',
       amenities: '',
       image_url: '',
+      images: [],
       location: '',
       is_active: true
     });
@@ -59,6 +62,7 @@ const RoomTypeManagement = () => {
       max_capacity: type?.max_capacity || '',
       amenities: type?.amenities?.join(', ') || '',
       image_url: type?.image_url || '',
+      images: type?.images || [],
       location: type?.location || '',
       is_active: type?.is_active ?? true
     });
@@ -74,6 +78,7 @@ const RoomTypeManagement = () => {
       max_capacity: '',
       amenities: '',
       image_url: '',
+      images: [],
       location: '',
       is_active: true
     });
@@ -86,13 +91,19 @@ const RoomTypeManagement = () => {
         ?.map(a => a?.trim())
         ?.filter(a => a?.length > 0) || [];
 
+      // Use first uploaded image as main image_url if available
+      const mainImageUrl = formData?.images?.length > 0 
+        ? formData.images[0] 
+        : formData?.image_url;
+
       const payload = {
         name: formData?.name,
         description: formData?.description,
         base_price: parseFloat(formData?.base_price),
         max_capacity: parseInt(formData?.max_capacity),
         amenities: amenitiesArray,
-        image_url: formData?.image_url,
+        image_url: mainImageUrl,
+        images: formData?.images || [],
         location: formData?.location,
         is_active: formData?.is_active
       };
@@ -189,12 +200,6 @@ const RoomTypeManagement = () => {
               onChange={(e) => setFormData({ ...formData, location: e?.target?.value })}
               placeholder="Masinagudi"
             />
-            <Input
-              label="Image URL"
-              value={formData?.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e?.target?.value })}
-              placeholder="https://example.com/image.jpg"
-            />
             <div className="md:col-span-2">
               <Input
                 label="Description"
@@ -210,6 +215,26 @@ const RoomTypeManagement = () => {
                 onChange={(e) => setFormData({ ...formData, amenities: e?.target?.value })}
                 placeholder="WiFi, AC, TV, Mini Bar"
               />
+            </div>
+            <div className="md:col-span-2">
+              <ImageUpload
+                images={formData?.images || []}
+                onImagesChange={(images) => setFormData({ ...formData, images })}
+                folder="rooms"
+                maxImages={8}
+                label="Room Images (Gallery)"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Or enter Image URL manually"
+                value={formData?.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e?.target?.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Note: Uploaded images above will override this URL
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -243,13 +268,33 @@ const RoomTypeManagement = () => {
             data-testid={`room-type-card-${type?.id}`}
           >
             <div className="flex flex-col md:flex-row gap-4">
-              {type?.image_url && (
-                <img
-                  src={type?.image_url}
-                  alt={type?.name}
-                  className="w-full md:w-32 h-32 object-cover rounded-lg"
-                />
-              )}
+              {/* Image Gallery Preview */}
+              <div className="flex gap-2 w-full md:w-auto">
+                {type?.image_url && (
+                  <img
+                    src={type?.image_url}
+                    alt={type?.name}
+                    className="w-full md:w-32 h-32 object-cover rounded-lg"
+                  />
+                )}
+                {type?.images?.length > 1 && (
+                  <div className="hidden md:flex flex-col gap-1">
+                    {type.images.slice(1, 4).map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt={`${type?.name} ${idx + 2}`}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                    ))}
+                    {type.images.length > 4 && (
+                      <div className="w-10 h-10 bg-primary/20 rounded flex items-center justify-center text-xs text-primary">
+                        +{type.images.length - 4}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="font-semibold text-foreground text-lg">{type?.name}</span>

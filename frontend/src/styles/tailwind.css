@@ -10,47 +10,47 @@
 
 @layer base {
   :root {
-    /* Dark Naturalistic Theme - Deep Forest Night */
+    /* Forest Green Theme - Moderately Light */
     
     /* Primary Colors - Forest Greens */
-    --color-primary: #4A7C2E; /* Vibrant forest green */
+    --color-primary: #5A9A3A; /* Brighter forest green */
     --color-primary-foreground: #FFFFFF;
     
     /* Secondary Colors - Earth Browns */
-    --color-secondary: #A0522D; /* Warm sienna brown */
+    --color-secondary: #B8673D; /* Warmer sienna brown */
     --color-secondary-foreground: #FFFFFF;
     
     /* Accent Colors - Tiger Orange/Amber */
-    --color-accent: #FF8C5A; /* Warm sunset orange */
+    --color-accent: #FF9E6D; /* Warm sunset orange */
     --color-accent-foreground: #1A1A1A;
     
-    /* Background - Deep Forest Night */
-    --color-background: #0D1A0D; /* Very dark forest green */
-    --color-foreground: #E8E4DF; /* Warm off-white */
+    /* Background - Forest Green (Lighter) */
+    --color-background: #1E3A1E; /* Lighter forest green */
+    --color-foreground: #F0EDE8; /* Warm off-white */
     
-    /* Surface Colors - Layered Forest Depths */
-    --color-card: #152415; /* Dark green-brown */
-    --color-card-foreground: #E0DCD7;
-    --color-popover: #1A2D1A; /* Slightly lighter for popovers */
-    --color-popover-foreground: #E0DCD7;
+    /* Surface Colors - Layered Forest Greens */
+    --color-card: #2A4A2A; /* Medium forest green */
+    --color-card-foreground: #F0EDE8;
+    --color-popover: #345834; /* Slightly lighter for popovers */
+    --color-popover-foreground: #F0EDE8;
     
     /* Muted Colors - Mossy Undertones */
-    --color-muted: #1E2E1E; /* Dark mossy green */
-    --color-muted-foreground: #9CA38B; /* Sage green-gray */
+    --color-muted: #3A5A3A; /* Medium mossy green */
+    --color-muted-foreground: #B8C4A8; /* Lighter sage green */
     
     /* Border & Input - Organic Lines */
-    --color-border: rgba(74, 124, 46, 0.3); /* Forest green border */
-    --color-input: rgba(74, 124, 46, 0.2);
-    --color-ring: #FF8C5A; /* Amber focus ring */
+    --color-border: rgba(90, 154, 58, 0.4); /* Forest green border */
+    --color-input: rgba(90, 154, 58, 0.25);
+    --color-ring: #FF9E6D; /* Amber focus ring */
     
     /* State Colors */
-    --color-success: #5CB85C; /* Fresh leaf green */
+    --color-success: #6DC86D; /* Fresh leaf green */
     --color-success-foreground: #FFFFFF;
-    --color-warning: #F0AD4E; /* Golden amber */
+    --color-warning: #F5BE5E; /* Golden amber */
     --color-warning-foreground: #1A1A1A;
-    --color-error: #D9534F; /* Natural red */
+    --color-error: #E65F5C; /* Natural red */
     --color-error-foreground: #FFFFFF;
-    --color-destructive: #D9534F;
+    --color-destructive: #E65F5C;
     --color-destructive-foreground: #FFFFFF;
     
     /* Spacing & Layout */
@@ -132,50 +132,50 @@
 
   /* Dark Theme Specific Utilities */
   .glass-dark {
-    background: rgba(21, 36, 21, 0.8);
+    background: rgba(42, 74, 42, 0.85);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(74, 124, 46, 0.2);
+    border: 1px solid rgba(90, 154, 58, 0.3);
   }
 
   .glow-accent {
-    box-shadow: 0 0 20px rgba(255, 140, 90, 0.3);
+    box-shadow: 0 0 20px rgba(255, 158, 109, 0.3);
   }
 
   .glow-primary {
-    box-shadow: 0 0 20px rgba(74, 124, 46, 0.3);
+    box-shadow: 0 0 20px rgba(90, 154, 58, 0.3);
   }
 
-  /* Leaflet Custom Styles - Dark Theme */
+  /* Leaflet Custom Styles - Forest Theme */
   .leaflet-container {
     font-family: inherit;
-    background: #152415;
+    background: #2A4A2A;
   }
 
   .leaflet-popup-content-wrapper {
     border-radius: 12px;
     padding: 0;
     overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    background: #1A2D1A;
-    color: #E0DCD7;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    background: #345834;
+    color: #F0EDE8;
   }
 
   .leaflet-popup-content {
     margin: 12px;
     min-width: 200px;
-    color: #E0DCD7;
+    color: #F0EDE8;
   }
 
   .leaflet-popup-tip {
-    background: #1A2D1A;
+    background: #345834;
   }
 
   .leaflet-popup-close-button {
-    color: #9CA38B !important;
+    color: #B8C4A8 !important;
   }
 
   .leaflet-popup-close-button:hover {
-    color: #FF8C5A !important;
+    color: #FF9E6D !important;
   }
 
   .custom-marker {
@@ -185,16 +185,16 @@
 
   .leaflet-control-zoom {
     border: none !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
     border-radius: 12px !important;
     overflow: hidden;
   }
 
   .leaflet-control-zoom a {
-    background: #1A2D1A !important;
-    color: #4A7C2E !important;
+    background: #345834 !important;
+    color: #5A9A3A !important;
     border: none !important;
-    border-bottom: 1px solid rgba(74, 124, 46, 0.2) !important;
+    border-bottom: 1px solid rgba(90, 154, 58, 0.3) !important;
     width: 36px !important;
     height: 36px !important;
     line-height: 36px !important;
@@ -202,7 +202,7 @@
   }
 
   .leaflet-control-zoom a:hover {
-    background: #4A7C2E !important;
+    background: #5A9A3A !important;
     color: white !important;
   }
 
@@ -211,20 +211,20 @@
   }
 
   .leaflet-control-attribution {
-    background: rgba(21, 36, 21, 0.9) !important;
+    background: rgba(42, 74, 42, 0.9) !important;
     backdrop-filter: blur(4px);
     font-size: 10px !important;
     padding: 2px 8px !important;
     border-radius: 4px !important;
-    color: #9CA38B !important;
+    color: #B8C4A8 !important;
   }
 
   .leaflet-control-attribution a {
-    color: #4A7C2E !important;
+    color: #5A9A3A !important;
   }
 
-  /* Map Tile Filter for Dark Theme */
+  /* Map Tile Filter for Forest Theme */
   .leaflet-tile-pane {
-    filter: brightness(0.7) saturate(0.8) hue-rotate(10deg);
+    filter: brightness(0.85) saturate(0.9);
   }
 }
