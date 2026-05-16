@@ -1,16 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
+import api from '../../../lib/api';
 import 'leaflet/dist/leaflet.css';
 
 const HeroCarousel = ({ onSearch }) => {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
   // Booking form state
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
-  const [bookingType, setBookingType] = useState('both');
+  const [travelDate, setTravelDate] = useState('');
+  const [bookingType, setBookingType] = useState('rooms');
   const [guests, setGuests] = useState(2);
+  const [location, setLocation] = useState('');
+  const [safariType, setSafariType] = useState('');
+  
+  // Data from API
+  const [locations, setLocations] = useState([]);
+  const [safariRoutes, setSafariRoutes] = useState([]);
 
   const slides = [
     {
@@ -51,6 +61,30 @@ const HeroCarousel = ({ onSearch }) => {
     }
   ];
 
+  // Fetch locations and safari routes
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch room types for locations
+        const roomsRes = await api.get('/api/room-types');
+        const uniqueLocations = [...new Set(roomsRes.data.map(r => r.location).filter(Boolean))];
+        setLocations(uniqueLocations);
+        if (uniqueLocations.length > 0) setLocation(uniqueLocations[0]);
+        
+        // Fetch safari routes
+        const safariRes = await api.get('/api/safari-routes?active_only=true');
+        setSafariRoutes(safariRes.data || []);
+        if (safariRes.data?.length > 0) setSafariType(safariRes.data[0].id);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Set default locations
+        setLocations(['Theppakadu', 'Masinagudi', 'Gudalur', 'Kargudi']);
+        setLocation('Theppakadu');
+      }
+    };
+    fetchData();
+  }, []);
+
   const goToSlide = useCallback((index) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
@@ -84,6 +118,7 @@ const HeroCarousel = ({ onSearch }) => {
     
     setCheckInDate(tomorrow.toISOString().split('T')[0]);
     setCheckOutDate(dayAfter.toISOString().split('T')[0]);
+    setTravelDate(tomorrow.toISOString().split('T')[0]);
   }, []);
 
   const handleSearch = () => {
@@ -91,14 +126,23 @@ const HeroCarousel = ({ onSearch }) => {
       onSearch({
         checkInDate,
         checkOutDate,
+        travelDate,
         bookingType,
-        guests
+        guests,
+        location,
+        safariType
       });
     }
-    // Scroll to the map section which shows accommodations
-    const mapSection = document.getElementById('map-section');
-    if (mapSection) {
-      mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Navigate based on booking type
+    if (bookingType === 'safari') {
+      navigate('/safari-route-explorer');
+    } else {
+      // Scroll to the map section which shows accommodations
+      const mapSection = document.getElementById('map-section');
+      if (mapSection) {
+        mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
@@ -107,6 +151,266 @@ const HeroCarousel = ({ onSearch }) => {
     { id: 'safari', label: 'Safari Only', icon: 'Binoculars', description: 'Jeep & bus safari tours' },
     { id: 'both', label: 'Rooms + Safari', icon: 'Sparkles', description: 'Complete wildlife package' }
   ];
+
+  // Render form fields based on booking type
+  const renderFormFields = () => {
+    if (bookingType === 'rooms') {
+      return (
+        <>
+          {/* Check-in Date */}
+          <div className="relative">
+            <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+              Check-in Date
+            </label>
+            <div className="relative">
+              <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+              <input
+                type="date"
+                value={checkInDate}
+                onChange={(e) => setCheckInDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
+                data-testid="check-in-date"
+              />
+            </div>
+          </div>
+
+          {/* Check-out Date */}
+          <div className="relative">
+            <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+              Check-out Date
+            </label>
+            <div className="relative">
+              <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+              <input
+                type="date"
+                value={checkOutDate}
+                onChange={(e) => setCheckOutDate(e.target.value)}
+                min={checkInDate || new Date().toISOString().split('T')[0]}
+                className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
+                data-testid="check-out-date"
+              />
+            </div>
+          </div>
+
+          {/* Guests */}
+          <div className="relative">
+            <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+              Guests
+            </label>
+            <div className="relative">
+              <Icon name="Users" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+              <select
+                value={guests}
+                onChange={(e) => setGuests(Number(e.target.value))}
+                className="w-full pl-10 pr-10 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all appearance-none cursor-pointer"
+                data-testid="guests-select"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                  <option key={num} value={num} className="bg-[#2A4A2A]">
+                    {num} {num === 1 ? 'Guest' : 'Guests'}
+                  </option>
+                ))}
+              </select>
+              <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A9A3A] pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Location */}
+          <div className="relative">
+            <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+              Location
+            </label>
+            <div className="relative">
+              <Icon name="MapPin" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+              <select
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full pl-10 pr-10 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all appearance-none cursor-pointer"
+                data-testid="location-select"
+              >
+                <option value="" className="bg-[#2A4A2A]">All Locations</option>
+                {locations.map(loc => (
+                  <option key={loc} value={loc} className="bg-[#2A4A2A]">
+                    {loc}
+                  </option>
+                ))}
+              </select>
+              <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A9A3A] pointer-events-none" />
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    if (bookingType === 'safari') {
+      return (
+        <>
+          {/* Travel Date */}
+          <div className="relative">
+            <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+              Safari Date
+            </label>
+            <div className="relative">
+              <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+              <input
+                type="date"
+                value={travelDate}
+                onChange={(e) => setTravelDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
+                data-testid="travel-date"
+              />
+            </div>
+          </div>
+
+          {/* Guests */}
+          <div className="relative">
+            <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+              Participants
+            </label>
+            <div className="relative">
+              <Icon name="Users" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+              <select
+                value={guests}
+                onChange={(e) => setGuests(Number(e.target.value))}
+                className="w-full pl-10 pr-10 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all appearance-none cursor-pointer"
+                data-testid="safari-guests-select"
+              >
+                {[1, 2, 3, 4, 5, 6].map(num => (
+                  <option key={num} value={num} className="bg-[#2A4A2A]">
+                    {num} {num === 1 ? 'Person' : 'People'}
+                  </option>
+                ))}
+              </select>
+              <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A9A3A] pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Safari Type */}
+          <div className="relative md:col-span-2">
+            <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+              Safari Route
+            </label>
+            <div className="relative">
+              <Icon name="Route" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+              <select
+                value={safariType}
+                onChange={(e) => setSafariType(e.target.value)}
+                className="w-full pl-10 pr-10 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all appearance-none cursor-pointer"
+                data-testid="safari-type-select"
+              >
+                <option value="" className="bg-[#2A4A2A]">Select Safari Route</option>
+                <optgroup label="2-Hour Safari (20 km)" className="bg-[#2A4A2A]">
+                  {safariRoutes.filter(r => r.safari_type === '2hr').map(route => (
+                    <option key={route.id} value={route.id} className="bg-[#2A4A2A]">
+                      {route.short_name || route.name} - ₹{route.price_per_person}/person
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="1-Hour Safari" className="bg-[#2A4A2A]">
+                  {safariRoutes.filter(r => r.safari_type === '1hr').map(route => (
+                    <option key={route.id} value={route.id} className="bg-[#2A4A2A]">
+                      {route.short_name || route.name} - ₹{route.price_per_person}/person
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+              <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A9A3A] pointer-events-none" />
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    // Both - Rooms + Safari
+    return (
+      <>
+        {/* Check-in Date */}
+        <div className="relative">
+          <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+            Check-in Date
+          </label>
+          <div className="relative">
+            <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+            <input
+              type="date"
+              value={checkInDate}
+              onChange={(e) => setCheckInDate(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
+              data-testid="check-in-date-both"
+            />
+          </div>
+        </div>
+
+        {/* Check-out Date */}
+        <div className="relative">
+          <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+            Check-out Date
+          </label>
+          <div className="relative">
+            <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+            <input
+              type="date"
+              value={checkOutDate}
+              onChange={(e) => setCheckOutDate(e.target.value)}
+              min={checkInDate || new Date().toISOString().split('T')[0]}
+              className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
+              data-testid="check-out-date-both"
+            />
+          </div>
+        </div>
+
+        {/* Guests */}
+        <div className="relative">
+          <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+            Guests
+          </label>
+          <div className="relative">
+            <Icon name="Users" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+            <select
+              value={guests}
+              onChange={(e) => setGuests(Number(e.target.value))}
+              className="w-full pl-10 pr-10 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all appearance-none cursor-pointer"
+              data-testid="guests-select-both"
+            >
+              {[1, 2, 3, 4, 5, 6].map(num => (
+                <option key={num} value={num} className="bg-[#2A4A2A]">
+                  {num} {num === 1 ? 'Guest' : 'Guests'}
+                </option>
+              ))}
+            </select>
+            <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A9A3A] pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="relative">
+          <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
+            Location
+          </label>
+          <div className="relative">
+            <Icon name="MapPin" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
+            <select
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full pl-10 pr-10 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all appearance-none cursor-pointer"
+              data-testid="location-select-both"
+            >
+              <option value="" className="bg-[#2A4A2A]">All Locations</option>
+              {locations.map(loc => (
+                <option key={loc} value={loc} className="bg-[#2A4A2A]">
+                  {loc}
+                </option>
+              ))}
+            </select>
+            <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A9A3A] pointer-events-none" />
+          </div>
+        </div>
+      </>
+    );
+  };
 
   return (
     <section className="relative w-full h-[85vh] min-h-[650px] max-h-[900px] overflow-hidden" data-testid="hero-carousel">
@@ -177,67 +481,10 @@ const HeroCarousel = ({ onSearch }) => {
                 ))}
               </div>
 
-              {/* Date & Guest Selection */}
+              {/* Dynamic Form Fields */}
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {/* Check-in Date */}
-                  <div className="relative">
-                    <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
-                      Check-in Date
-                    </label>
-                    <div className="relative">
-                      <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
-                      <input
-                        type="date"
-                        value={checkInDate}
-                        onChange={(e) => setCheckInDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
-                        data-testid="check-in-date"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Check-out Date */}
-                  <div className="relative">
-                    <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
-                      Check-out Date
-                    </label>
-                    <div className="relative">
-                      <Icon name="Calendar" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
-                      <input
-                        type="date"
-                        value={checkOutDate}
-                        onChange={(e) => setCheckOutDate(e.target.value)}
-                        min={checkInDate || new Date().toISOString().split('T')[0]}
-                        className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all"
-                        data-testid="check-out-date"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Guests */}
-                  <div className="relative">
-                    <label className="block text-xs font-medium text-[#5A9A3A] mb-2 uppercase tracking-wider">
-                      Guests
-                    </label>
-                    <div className="relative">
-                      <Icon name="Users" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A9A3A]" />
-                      <select
-                        value={guests}
-                        onChange={(e) => setGuests(Number(e.target.value))}
-                        className="w-full pl-10 pr-4 py-3 bg-[#2A4A2A] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A] focus:ring-2 focus:ring-[#5A9A3A]/20 transition-all appearance-none cursor-pointer"
-                        data-testid="guests-select"
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                          <option key={num} value={num} className="bg-[#2A4A2A]">
-                            {num} {num === 1 ? 'Guest' : 'Guests'}
-                          </option>
-                        ))}
-                      </select>
-                      <Icon name="ChevronDown" size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5A9A3A] pointer-events-none" />
-                    </div>
-                  </div>
+                <div className={`grid gap-4 ${bookingType === 'safari' ? 'grid-cols-1 md:grid-cols-4' : 'grid-cols-1 md:grid-cols-5'}`}>
+                  {renderFormFields()}
 
                   {/* Search Button */}
                   <div className="flex items-end">
@@ -247,7 +494,7 @@ const HeroCarousel = ({ onSearch }) => {
                       data-testid="search-availability-btn"
                     >
                       <Icon name="Search" size={20} />
-                      <span>Check Availability</span>
+                      <span>{bookingType === 'safari' ? 'Book Safari' : 'Check Availability'}</span>
                     </button>
                   </div>
                 </div>

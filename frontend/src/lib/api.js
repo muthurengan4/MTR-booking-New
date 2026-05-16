@@ -88,6 +88,50 @@ export const activityTypesAPI = {
   },
 };
 
+// Safari Routes API
+export const safariRoutesAPI = {
+  getAll: async (activeOnly = false) => {
+    const response = await api.get(`/api/safari-routes?active_only=${activeOnly}`);
+    return response.data;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/api/safari-routes/${id}`);
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/api/safari-routes', data);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/api/safari-routes/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/api/safari-routes/${id}`);
+    return response.data;
+  },
+};
+
+// Safari Slots API
+export const safariSlotsAPI = {
+  getAll: async (activeOnly = false) => {
+    const response = await api.get(`/api/safari-slots?active_only=${activeOnly}`);
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/api/safari-slots', data);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.put(`/api/safari-slots/${id}`, data);
+    return response.data;
+  },
+  delete: async (id) => {
+    const response = await api.delete(`/api/safari-slots/${id}`);
+    return response.data;
+  },
+};
+
 // Bookings API
 export const bookingsAPI = {
   getAll: async (status = null, bookingType = null) => {
@@ -105,14 +149,6 @@ export const bookingsAPI = {
   },
   cancel: async (id, reason = '') => {
     const response = await api.put(`/api/bookings/${id}/cancel?reason=${encodeURIComponent(reason)}`);
-    return response.data;
-  },
-};
-
-// Safari Routes API
-export const safariRoutesAPI = {
-  getAll: async (activeOnly = false) => {
-    const response = await api.get(`/api/safari-routes?active_only=${activeOnly}`);
     return response.data;
   },
 };

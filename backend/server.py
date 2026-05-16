@@ -105,6 +105,36 @@ class ActivityType(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+class SafariRoute(Base):
+    __tablename__ = "safari_routes"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(200), nullable=False)
+    short_name = Column(String(100))  # e.g., "Route 1", "Route 2"
+    description = Column(Text)
+    distance_km = Column(Numeric(5, 1))  # e.g., 20.5
+    duration_hours = Column(Integer, default=1)  # 1 or 2 hours
+    safari_type = Column(String(50))  # "1hr" or "2hr"
+    route_color = Column(String(20), default="#FFFF00")  # Hex color for map
+    price_per_person = Column(Numeric(10, 2), nullable=False)
+    max_capacity = Column(Integer, default=6)
+    coordinates = Column(Text)  # JSON array of [lng, lat] coordinates
+    highlights = Column(Text)  # JSON array of highlight points
+    image_url = Column(String(500))
+    images = Column(Text)  # JSON array of image URLs
+    is_active = Column(Boolean, default=True)
+    display_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+class SafariSlot(Base):
+    __tablename__ = "safari_slots"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    slot_time = Column(String(20), nullable=False)  # e.g., "06:30 AM"
+    slot_period = Column(String(20), nullable=False)  # "Morning" or "Afternoon"
+    is_active = Column(Boolean, default=True)
+    display_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
 class Booking(Base):
     __tablename__ = "bookings"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -167,25 +197,6 @@ class ActivityBlockedDate(Base):
     reason = Column(Text)
     created_by = Column(String(100))
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-class SafariRoute(Base):
-    __tablename__ = "safari_routes"
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    name = Column(String(100), nullable=False)
-    route_type = Column(String(20), nullable=False)  # jeep, bus, elephant
-    icon = Column(String(50), nullable=False)
-    color = Column(String(20), nullable=False)
-    duration = Column(String(50), nullable=False)
-    difficulty = Column(String(50), nullable=False)
-    distance = Column(String(50), nullable=False)
-    description = Column(Text, nullable=False)
-    highlights = Column(Text)  # JSON string
-    best_time = Column(String(100), nullable=False)
-    max_capacity = Column(Integer, default=6)
-    terrain = Column(String(255), nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 class SafariWaypoint(Base):
     __tablename__ = "safari_waypoints"
@@ -320,6 +331,56 @@ class ActivityTypeCreate(BaseModel):
     images: List[str] = []
     is_active: bool = True
 
+# Safari Route Models
+class SafariRouteResponse(BaseModel):
+    id: str
+    name: str
+    short_name: Optional[str]
+    description: Optional[str]
+    distance_km: float
+    duration_hours: int
+    safari_type: str
+    route_color: str
+    price_per_person: float
+    max_capacity: int
+    coordinates: List[List[float]]  # [[lng, lat], ...]
+    highlights: List[str]
+    image_url: Optional[str]
+    images: List[str]
+    is_active: bool
+    display_order: int
+
+class SafariRouteCreate(BaseModel):
+    name: str
+    short_name: Optional[str] = None
+    description: Optional[str] = None
+    distance_km: float = 0
+    duration_hours: int = 1
+    safari_type: str = "1hr"
+    route_color: str = "#FFFF00"
+    price_per_person: float
+    max_capacity: int = 6
+    coordinates: List[List[float]] = []
+    highlights: List[str] = []
+    image_url: Optional[str] = None
+    images: List[str] = []
+    is_active: bool = True
+    display_order: int = 0
+
+# Safari Slot Models
+class SafariSlotResponse(BaseModel):
+    id: str
+    slot_time: str
+    slot_period: str
+    is_active: bool
+    display_order: int
+
+class SafariSlotCreate(BaseModel):
+    slot_time: str
+    slot_period: str
+    is_active: bool = True
+    display_order: int = 0
+
 class BookingResponse(BaseModel):
     id: str
     booking_reference: str
@@ -356,23 +417,6 @@ class BookingCreate(BaseModel):
     guests_count: int = 1
     amount: float
     gst_rate: float = 12.0
-
-class SafariRouteResponse(BaseModel):
-    id: str
-    name: str
-    route_type: str
-    icon: str
-    color: str
-    duration: str
-    difficulty: str
-    distance: str
-    description: str
-    highlights: List[str]
-    best_time: str
-    max_capacity: int
-    terrain: str
-    is_active: bool
-    waypoints: Optional[List[dict]] = None
 
 class WildlifeZoneResponse(BaseModel):
     id: str
@@ -834,6 +878,215 @@ def delete_activity_type(activity_id: str, db: Session = Depends(get_db), _: dic
     db.commit()
     return {"success": True, "message": "Activity type deleted"}
 
+# Safari Routes Endpoints
+@app.get("/api/safari-routes", response_model=List[SafariRouteResponse])
+def get_safari_routes(active_only: bool = False, db: Session = Depends(get_db)):
+    query = db.query(SafariRoute)
+    if active_only:
+        query = query.filter(SafariRoute.is_active == True)
+    routes = query.order_by(SafariRoute.display_order).all()
+    return [
+        SafariRouteResponse(
+            id=r.id,
+            name=r.name,
+            short_name=r.short_name,
+            description=r.description,
+            distance_km=float(r.distance_km) if r.distance_km else 0,
+            duration_hours=r.duration_hours,
+            safari_type=r.safari_type,
+            route_color=r.route_color,
+            price_per_person=float(r.price_per_person),
+            max_capacity=r.max_capacity,
+            coordinates=parse_json_field(r.coordinates) if r.coordinates else [],
+            highlights=parse_json_field(r.highlights) if r.highlights else [],
+            image_url=r.image_url,
+            images=parse_json_field(r.images) if r.images else [],
+            is_active=r.is_active,
+            display_order=r.display_order
+        ) for r in routes
+    ]
+
+@app.get("/api/safari-routes/{route_id}", response_model=SafariRouteResponse)
+def get_safari_route(route_id: str, db: Session = Depends(get_db)):
+    route = db.query(SafariRoute).filter(SafariRoute.id == route_id).first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Safari route not found")
+    return SafariRouteResponse(
+        id=route.id,
+        name=route.name,
+        short_name=route.short_name,
+        description=route.description,
+        distance_km=float(route.distance_km) if route.distance_km else 0,
+        duration_hours=route.duration_hours,
+        safari_type=route.safari_type,
+        route_color=route.route_color,
+        price_per_person=float(route.price_per_person),
+        max_capacity=route.max_capacity,
+        coordinates=parse_json_field(route.coordinates) if route.coordinates else [],
+        highlights=parse_json_field(route.highlights) if route.highlights else [],
+        image_url=route.image_url,
+        images=parse_json_field(route.images) if route.images else [],
+        is_active=route.is_active,
+        display_order=route.display_order
+    )
+
+@app.post("/api/safari-routes", response_model=SafariRouteResponse)
+def create_safari_route(route: SafariRouteCreate, db: Session = Depends(get_db), _: dict = Depends(verify_token)):
+    db_route = SafariRoute(
+        name=route.name,
+        short_name=route.short_name,
+        description=route.description,
+        distance_km=route.distance_km,
+        duration_hours=route.duration_hours,
+        safari_type=route.safari_type,
+        route_color=route.route_color,
+        price_per_person=route.price_per_person,
+        max_capacity=route.max_capacity,
+        coordinates=serialize_json_field(route.coordinates),
+        highlights=serialize_json_field(route.highlights),
+        image_url=route.image_url,
+        images=serialize_json_field(route.images) if route.images else None,
+        is_active=route.is_active,
+        display_order=route.display_order
+    )
+    db.add(db_route)
+    db.commit()
+    db.refresh(db_route)
+    return SafariRouteResponse(
+        id=db_route.id,
+        name=db_route.name,
+        short_name=db_route.short_name,
+        description=db_route.description,
+        distance_km=float(db_route.distance_km) if db_route.distance_km else 0,
+        duration_hours=db_route.duration_hours,
+        safari_type=db_route.safari_type,
+        route_color=db_route.route_color,
+        price_per_person=float(db_route.price_per_person),
+        max_capacity=db_route.max_capacity,
+        coordinates=parse_json_field(db_route.coordinates) if db_route.coordinates else [],
+        highlights=parse_json_field(db_route.highlights) if db_route.highlights else [],
+        image_url=db_route.image_url,
+        images=parse_json_field(db_route.images) if db_route.images else [],
+        is_active=db_route.is_active,
+        display_order=db_route.display_order
+    )
+
+@app.put("/api/safari-routes/{route_id}", response_model=SafariRouteResponse)
+def update_safari_route(route_id: str, route: SafariRouteCreate, db: Session = Depends(get_db), _: dict = Depends(verify_token)):
+    db_route = db.query(SafariRoute).filter(SafariRoute.id == route_id).first()
+    if not db_route:
+        raise HTTPException(status_code=404, detail="Safari route not found")
+    
+    db_route.name = route.name
+    db_route.short_name = route.short_name
+    db_route.description = route.description
+    db_route.distance_km = route.distance_km
+    db_route.duration_hours = route.duration_hours
+    db_route.safari_type = route.safari_type
+    db_route.route_color = route.route_color
+    db_route.price_per_person = route.price_per_person
+    db_route.max_capacity = route.max_capacity
+    db_route.coordinates = serialize_json_field(route.coordinates)
+    db_route.highlights = serialize_json_field(route.highlights)
+    db_route.image_url = route.image_url
+    db_route.images = serialize_json_field(route.images) if route.images else None
+    db_route.is_active = route.is_active
+    db_route.display_order = route.display_order
+    db.commit()
+    db.refresh(db_route)
+    
+    return SafariRouteResponse(
+        id=db_route.id,
+        name=db_route.name,
+        short_name=db_route.short_name,
+        description=db_route.description,
+        distance_km=float(db_route.distance_km) if db_route.distance_km else 0,
+        duration_hours=db_route.duration_hours,
+        safari_type=db_route.safari_type,
+        route_color=db_route.route_color,
+        price_per_person=float(db_route.price_per_person),
+        max_capacity=db_route.max_capacity,
+        coordinates=parse_json_field(db_route.coordinates) if db_route.coordinates else [],
+        highlights=parse_json_field(db_route.highlights) if db_route.highlights else [],
+        image_url=db_route.image_url,
+        images=parse_json_field(db_route.images) if db_route.images else [],
+        is_active=db_route.is_active,
+        display_order=db_route.display_order
+    )
+
+@app.delete("/api/safari-routes/{route_id}")
+def delete_safari_route(route_id: str, db: Session = Depends(get_db), _: dict = Depends(verify_token)):
+    db_route = db.query(SafariRoute).filter(SafariRoute.id == route_id).first()
+    if not db_route:
+        raise HTTPException(status_code=404, detail="Safari route not found")
+    db.delete(db_route)
+    db.commit()
+    return {"success": True, "message": "Safari route deleted"}
+
+# Safari Slots Endpoints
+@app.get("/api/safari-slots", response_model=List[SafariSlotResponse])
+def get_safari_slots(active_only: bool = False, db: Session = Depends(get_db)):
+    query = db.query(SafariSlot)
+    if active_only:
+        query = query.filter(SafariSlot.is_active == True)
+    slots = query.order_by(SafariSlot.display_order).all()
+    return [
+        SafariSlotResponse(
+            id=s.id,
+            slot_time=s.slot_time,
+            slot_period=s.slot_period,
+            is_active=s.is_active,
+            display_order=s.display_order
+        ) for s in slots
+    ]
+
+@app.post("/api/safari-slots", response_model=SafariSlotResponse)
+def create_safari_slot(slot: SafariSlotCreate, db: Session = Depends(get_db), _: dict = Depends(verify_token)):
+    db_slot = SafariSlot(
+        slot_time=slot.slot_time,
+        slot_period=slot.slot_period,
+        is_active=slot.is_active,
+        display_order=slot.display_order
+    )
+    db.add(db_slot)
+    db.commit()
+    db.refresh(db_slot)
+    return SafariSlotResponse(
+        id=db_slot.id,
+        slot_time=db_slot.slot_time,
+        slot_period=db_slot.slot_period,
+        is_active=db_slot.is_active,
+        display_order=db_slot.display_order
+    )
+
+@app.put("/api/safari-slots/{slot_id}", response_model=SafariSlotResponse)
+def update_safari_slot(slot_id: str, slot: SafariSlotCreate, db: Session = Depends(get_db), _: dict = Depends(verify_token)):
+    db_slot = db.query(SafariSlot).filter(SafariSlot.id == slot_id).first()
+    if not db_slot:
+        raise HTTPException(status_code=404, detail="Safari slot not found")
+    db_slot.slot_time = slot.slot_time
+    db_slot.slot_period = slot.slot_period
+    db_slot.is_active = slot.is_active
+    db_slot.display_order = slot.display_order
+    db.commit()
+    db.refresh(db_slot)
+    return SafariSlotResponse(
+        id=db_slot.id,
+        slot_time=db_slot.slot_time,
+        slot_period=db_slot.slot_period,
+        is_active=db_slot.is_active,
+        display_order=db_slot.display_order
+    )
+
+@app.delete("/api/safari-slots/{slot_id}")
+def delete_safari_slot(slot_id: str, db: Session = Depends(get_db), _: dict = Depends(verify_token)):
+    db_slot = db.query(SafariSlot).filter(SafariSlot.id == slot_id).first()
+    if not db_slot:
+        raise HTTPException(status_code=404, detail="Safari slot not found")
+    db.delete(db_slot)
+    db.commit()
+    return {"success": True, "message": "Safari slot deleted"}
+
 # Bookings Endpoints
 @app.get("/api/bookings", response_model=List[BookingResponse])
 def get_bookings(
@@ -1098,46 +1351,6 @@ def check_availability(request: AvailabilityCheckRequest, db: Session = Depends(
         safari_slots=max(0, safari_slots)
     )
 
-# Safari Routes Endpoints
-@app.get("/api/safari-routes", response_model=List[SafariRouteResponse])
-def get_safari_routes(active_only: bool = False, db: Session = Depends(get_db)):
-    query = db.query(SafariRoute)
-    if active_only:
-        query = query.filter(SafariRoute.is_active == True)
-    routes = query.all()
-    
-    result = []
-    for r in routes:
-        waypoints = db.query(SafariWaypoint).filter(
-            SafariWaypoint.route_id == r.id
-        ).order_by(SafariWaypoint.sequence_order).all()
-        
-        result.append(SafariRouteResponse(
-            id=r.id,
-            name=r.name,
-            route_type=r.route_type,
-            icon=r.icon,
-            color=r.color,
-            duration=r.duration,
-            difficulty=r.difficulty,
-            distance=r.distance,
-            description=r.description,
-            highlights=parse_json_field(r.highlights),
-            best_time=r.best_time,
-            max_capacity=r.max_capacity,
-            terrain=r.terrain,
-            is_active=r.is_active,
-            waypoints=[{
-                "id": w.id,
-                "name": w.name,
-                "time": w.time,
-                "elevation": w.elevation,
-                "description": w.description,
-                "sequence_order": w.sequence_order
-            } for w in waypoints]
-        ))
-    return result
-
 # Wildlife Zones Endpoints
 @app.get("/api/wildlife-zones", response_model=List[WildlifeZoneResponse])
 def get_wildlife_zones(active_only: bool = False, db: Session = Depends(get_db)):
@@ -1308,20 +1521,115 @@ def init_database(db: Session = Depends(get_db)):
         if not existing:
             db.add(IntegrationSetting(**sd))
     
-    # Seed safari routes
-    jeep_route_id = str(uuid.uuid4())
-    bus_route_id = str(uuid.uuid4())
-    elephant_route_id = str(uuid.uuid4())
-    
+    # Seed safari routes from KML data - 6 MTR Tourism Routes
     safari_routes_data = [
-        {"id": jeep_route_id, "name": "Jeep Safari", "route_type": "jeep", "icon": "Truck", "color": "#2D5016", "duration": "3-4 hours", "difficulty": "Moderate", "distance": "25 km", "description": "Thrilling off-road adventure through dense forests and grasslands", "highlights": '["Tiger sightings", "Elephant herds", "Gaur populations", "Bird watching"]', "best_time": "Early morning (6:00 AM) or late afternoon (3:30 PM)", "max_capacity": 6, "terrain": "Mixed terrain with forest trails"},
-        {"id": bus_route_id, "name": "Bus Safari", "route_type": "bus", "icon": "Bus", "color": "#8B4513", "duration": "2-3 hours", "difficulty": "Easy", "distance": "18 km", "description": "Comfortable group safari experience on paved roads", "highlights": '["Spotted deer herds", "Peacock displays", "Langur colonies", "Scenic landscapes"]', "best_time": "Morning (7:00 AM) or afternoon (4:00 PM)", "max_capacity": 45, "terrain": "Paved roads through forest corridors"},
-        {"id": elephant_route_id, "name": "Elephant Camp Visit", "route_type": "elephant", "icon": "Mountain", "color": "#FF6B35", "duration": "1.5-2 hours", "difficulty": "Easy", "distance": "5 km", "description": "Educational walking tour of elephant rehabilitation camp", "highlights": '["Elephant feeding", "Bathing sessions", "Conservation education", "Mahout interactions"]', "best_time": "Morning (8:00 AM) for bathing session", "max_capacity": 20, "terrain": "Flat walking paths"},
+        # 2-hour routes (20km, Yellow color)
+        {
+            "name": "Reception-Mandradiyar Road-Reception",
+            "short_name": "Route 1 - Mandradiyar",
+            "description": "20.5 km route through dense forest with high wildlife sighting probability",
+            "distance_km": 20.5,
+            "duration_hours": 2,
+            "safari_type": "2hr",
+            "route_color": "#FFFF00",
+            "price_per_person": 800.0,
+            "max_capacity": 6,
+            "coordinates": '[[76.6228666666667,11.5627361111111],[76.6222666666667,11.5633638888889],[76.6215833333333,11.5649083333333],[76.6209861111111,11.5663111111111],[76.6192972222222,11.5693166666667],[76.6186777777778,11.5699472222222],[76.6180555555556,11.5703833333333],[76.6172166666667,11.5704611111111],[76.6161888888889,11.5705027777778],[76.6154388888889,11.5708888888889],[76.6134777777778,11.5729833333333],[76.612225,11.5747361111111],[76.6107055555556,11.5775],[76.6101805555556,11.579975],[76.6092555555556,11.5831833333333],[76.6087722222222,11.5852166666667],[76.6082916666667,11.586875],[76.6082416666667,11.589325],[76.6082666666667,11.5917944444444],[76.6085222222222,11.593725],[76.6099305555556,11.5965055555556],[76.6111611111111,11.5991861111111],[76.6130972222222,11.6029694444444],[76.6142083333333,11.6045027777778],[76.6156055555556,11.6058888888889],[76.6189083333333,11.6082527777778],[76.6197777777778,11.6093861111111],[76.6198888888889,11.6108777777778],[76.6194194444444,11.6141277777778],[76.6198611111111,11.6165416666667],[76.6201694444444,11.6179694444444]]',
+            "highlights": '["Dense forest cover", "Mandradiyar viewpoint", "Wildlife corridors", "Bird watching spots"]',
+            "display_order": 1
+        },
+        {
+            "name": "Reception-Gamehut Road-KMR-TMR Junction-Ponnangiri Junction-Ponnangiri Road-Reception",
+            "short_name": "Route 2 - Gamehut Circuit",
+            "description": "20 km circuit through multiple junctions with diverse terrain",
+            "distance_km": 20.0,
+            "duration_hours": 2,
+            "safari_type": "2hr",
+            "route_color": "#00FFFF",
+            "price_per_person": 800.0,
+            "max_capacity": 6,
+            "coordinates": '[[76.6228666666667,11.5627361111111],[76.6232833333333,11.5620694444444],[76.6242666666667,11.5607166666667],[76.6256888888889,11.5596361111111],[76.6266722222222,11.55835],[76.6278333333333,11.5555916666667],[76.6277416666667,11.55455],[76.6270777777778,11.553575],[76.6265166666667,11.5515611111111],[76.6266611111111,11.5496361111111],[76.6272888888889,11.5476388888889],[76.6285,11.54585],[76.630025,11.543675],[76.6320833333333,11.5411833333333],[76.6341111111111,11.5393277777778],[76.6373222222222,11.5368722222222],[76.6389194444444,11.5361333333333],[76.6409527777778,11.5352583333333],[76.6432805555556,11.5350972222222],[76.6455361111111,11.5356944444444],[76.6484777777778,11.5372444444444],[76.6506944444444,11.5385027777778],[76.652425,11.53925],[76.6541611111111,11.5390722222222],[76.6553527777778,11.5374138888889],[76.6563,11.5352333333333],[76.6574527777778,11.5314666666667],[76.6583583333333,11.5282916666667],[76.6608083333333,11.5252472222222],[76.66245,11.5229805555556],[76.6646222222222,11.5193416666667],[76.6658833333333,11.5170666666667],[76.6672888888889,11.5141805555556],[76.6679083333333,11.5106666666667],[76.6683777777778,11.5072416666667]]',
+            "highlights": '["Gamehut viewpoint", "KMR junction wildlife", "Ponnangiri forest", "Multiple terrain types"]',
+            "display_order": 2
+        },
+        # 1-hour routes
+        {
+            "name": "Reception-Circle Road-Waterfalls-Reception",
+            "short_name": "Route 3 - Waterfall Circuit",
+            "description": "13.2 km scenic route passing through waterfalls",
+            "distance_km": 13.2,
+            "duration_hours": 1,
+            "safari_type": "1hr",
+            "route_color": "#00FFFF",
+            "price_per_person": 500.0,
+            "max_capacity": 6,
+            "coordinates": '[[76.6228666666667,11.5627361111111],[76.6232833333333,11.5620694444444],[76.6242666666667,11.5607166666667],[76.6256888888889,11.5596361111111],[76.6266722222222,11.55835],[76.6278333333333,11.5555916666667],[76.6277416666667,11.55455],[76.6270777777778,11.553575],[76.6265166666667,11.5515611111111],[76.6266611111111,11.5496361111111],[76.6272888888889,11.5476388888889],[76.6285,11.54585],[76.630025,11.543675],[76.6274388888889,11.5433194444444],[76.6253833333333,11.5419027777778],[76.6226638888889,11.5411166666667],[76.6194027777778,11.5414111111111],[76.6170583333333,11.5408416666667],[76.6143722222222,11.5406305555556],[76.6119527777778,11.5414666666667],[76.6109611111111,11.5428722222222],[76.6107194444444,11.5451305555556],[76.6093388888889,11.5475027777778],[76.6077833333333,11.5484277777778],[76.6056944444444,11.5481166666667],[76.6043666666667,11.5493305555556],[76.6045833333333,11.5513888888889],[76.6058,11.5541444444444],[76.6074916666667,11.5557333333333],[76.6097944444444,11.5573666666667],[76.6132833333333,11.5582111111111],[76.6169138888889,11.5595972222222],[76.6194527777778,11.5611361111111],[76.6216611111111,11.5621583333333],[76.6228666666667,11.5627361111111]]',
+            "highlights": '["Scenic waterfall", "Circle road views", "Forest canopy", "Photo opportunities"]',
+            "display_order": 3
+        },
+        {
+            "name": "Reception-Sand Road-Ponnangiri Road-Reception",
+            "short_name": "Route 4 - Sand Road",
+            "description": "12.4 km route through sandy terrain with unique landscape",
+            "distance_km": 12.4,
+            "duration_hours": 1,
+            "safari_type": "1hr",
+            "route_color": "#00FFFF",
+            "price_per_person": 500.0,
+            "max_capacity": 6,
+            "coordinates": '[[76.6228666666667,11.5627361111111],[76.6216611111111,11.5621583333333],[76.6194527777778,11.5611361111111],[76.6169138888889,11.5595972222222],[76.6132833333333,11.5582111111111],[76.6097944444444,11.5573666666667],[76.6074916666667,11.5557333333333],[76.6058,11.5541444444444],[76.6045833333333,11.5513888888889],[76.6043666666667,11.5493305555556],[76.6021166666667,11.5467083333333],[76.5992277777778,11.5457166666667],[76.5965805555556,11.5460027777778],[76.5965638888889,11.5485472222222],[76.5983222222222,11.5499694444444],[76.6010527777778,11.5495638888889],[76.6043666666667,11.5493305555556],[76.6056944444444,11.5481166666667],[76.6077833333333,11.5484277777778],[76.6093388888889,11.5475027777778],[76.6107194444444,11.5451305555556],[76.6109611111111,11.5428722222222],[76.6119527777778,11.5414666666667],[76.6143722222222,11.5406305555556],[76.6170583333333,11.5408416666667],[76.6194027777778,11.5414111111111],[76.6226638888889,11.5411166666667],[76.6253833333333,11.5419027777778],[76.6274388888889,11.5433194444444],[76.630025,11.543675],[76.6285,11.54585],[76.6272888888889,11.5476388888889],[76.6266611111111,11.5496361111111],[76.6265166666667,11.5515611111111],[76.6270777777778,11.553575],[76.6277416666667,11.55455],[76.6278333333333,11.5555916666667],[76.6266722222222,11.55835],[76.6256888888889,11.5596361111111],[76.6242666666667,11.5607166666667],[76.6232833333333,11.5620694444444],[76.6228666666667,11.5627361111111]]',
+            "highlights": '["Sandy terrain", "Ponnangiri views", "Unique landscape", "Wildlife tracks"]',
+            "display_order": 4
+        },
+        {
+            "name": "TPK Reception-Kargudi-Crosscut Road-TMR Road-Reception",
+            "short_name": "Route 5 - Kargudi Circuit",
+            "description": "12.4 km route through Kargudi and crosscut roads",
+            "distance_km": 12.4,
+            "duration_hours": 1,
+            "safari_type": "1hr",
+            "route_color": "#00FFFF",
+            "price_per_person": 500.0,
+            "max_capacity": 6,
+            "coordinates": '[[76.6683777777778,11.5072416666667],[76.6679083333333,11.5106666666667],[76.6672888888889,11.5141805555556],[76.6658833333333,11.5170666666667],[76.6646222222222,11.5193416666667],[76.66245,11.5229805555556],[76.6608083333333,11.5252472222222],[76.6583583333333,11.5282916666667],[76.6574527777778,11.5314666666667],[76.6563,11.5352333333333],[76.6553527777778,11.5374138888889],[76.6541611111111,11.5390722222222],[76.652425,11.53925],[76.6506944444444,11.5385027777778],[76.6484777777778,11.5372444444444],[76.6455361111111,11.5356944444444],[76.6432805555556,11.5350972222222],[76.6409527777778,11.5352583333333],[76.6389194444444,11.5361333333333],[76.6373222222222,11.5368722222222],[76.6341111111111,11.5393277777778],[76.6320833333333,11.5411833333333],[76.630025,11.543675],[76.6285,11.54585],[76.6272888888889,11.5476388888889],[76.6266611111111,11.5496361111111],[76.6265166666667,11.5515611111111],[76.6270777777778,11.553575],[76.6277416666667,11.55455],[76.6278333333333,11.5555916666667],[76.6266722222222,11.55835],[76.6256888888889,11.5596361111111],[76.6242666666667,11.5607166666667],[76.6232833333333,11.5620694444444],[76.6228666666667,11.5627361111111]]',
+            "highlights": '["Kargudi forest", "Crosscut road wildlife", "TMR junction", "Diverse habitats"]',
+            "display_order": 5
+        },
+        {
+            "name": "Reception-KMR-TMR-Reception",
+            "short_name": "Route 6 - KMR-TMR Loop",
+            "description": "16 km loop connecting KMR and TMR areas",
+            "distance_km": 16.0,
+            "duration_hours": 1,
+            "safari_type": "1hr",
+            "route_color": "#00FFFF",
+            "price_per_person": 500.0,
+            "max_capacity": 6,
+            "coordinates": '[[76.6228666666667,11.5627361111111],[76.6232833333333,11.5620694444444],[76.6242666666667,11.5607166666667],[76.6256888888889,11.5596361111111],[76.6266722222222,11.55835],[76.6278333333333,11.5555916666667],[76.6277416666667,11.55455],[76.6270777777778,11.553575],[76.6265166666667,11.5515611111111],[76.6266611111111,11.5496361111111],[76.6272888888889,11.5476388888889],[76.6285,11.54585],[76.630025,11.543675],[76.6320833333333,11.5411833333333],[76.6341111111111,11.5393277777778],[76.6373222222222,11.5368722222222],[76.6389194444444,11.5361333333333],[76.6409527777778,11.5352583333333],[76.6432805555556,11.5350972222222],[76.6455361111111,11.5356944444444],[76.6484777777778,11.5372444444444],[76.6506944444444,11.5385027777778],[76.652425,11.53925],[76.6541611111111,11.5390722222222],[76.6553527777778,11.5374138888889],[76.6563,11.5352333333333],[76.6574527777778,11.5314666666667],[76.6583583333333,11.5282916666667],[76.6608083333333,11.5252472222222],[76.66245,11.5229805555556],[76.6646222222222,11.5193416666667],[76.6658833333333,11.5170666666667],[76.6672888888889,11.5141805555556],[76.6679083333333,11.5106666666667],[76.6683777777778,11.5072416666667]]',
+            "highlights": '["KMR wildlife zone", "TMR elephant area", "Forest corridors", "Scenic loop"]',
+            "display_order": 6
+        }
     ]
     for sr in safari_routes_data:
         existing = db.query(SafariRoute).filter(SafariRoute.name == sr["name"]).first()
         if not existing:
             db.add(SafariRoute(**sr, is_active=True))
+    
+    # Seed safari time slots
+    safari_slots_data = [
+        # Morning slots
+        {"slot_time": "06:30 AM", "slot_period": "Morning", "display_order": 1},
+        {"slot_time": "08:00 AM", "slot_period": "Morning", "display_order": 2},
+        {"slot_time": "09:30 AM", "slot_period": "Morning", "display_order": 3},
+        # Afternoon slots
+        {"slot_time": "02:00 PM", "slot_period": "Afternoon", "display_order": 4},
+        {"slot_time": "03:30 PM", "slot_period": "Afternoon", "display_order": 5},
+        {"slot_time": "05:00 PM", "slot_period": "Afternoon", "display_order": 6},
+    ]
+    for ss in safari_slots_data:
+        existing = db.query(SafariSlot).filter(SafariSlot.slot_time == ss["slot_time"]).first()
+        if not existing:
+            db.add(SafariSlot(**ss, is_active=True))
     
     # Seed wildlife zones
     wildlife_zones_data = [
