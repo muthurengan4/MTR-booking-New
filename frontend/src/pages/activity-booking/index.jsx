@@ -1,347 +1,683 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/navigation/Header';
-import BookingProgress from '../../components/navigation/BookingProgress';
 import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
-import ActivityCard from './components/ActivityCard';
-import CalendarView from './components/CalendarView';
-import TimeSlotSelector from './components/TimeSlotSelector';
-import BookingForm from './components/BookingForm';
-import PackageSuggestions from './components/PackageSuggestions';
-import ActivityFilters from './components/ActivityFilters';
+import { MapContainer, TileLayer, Polyline, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import { useCart } from '../../contexts/CartContext';
+import api from '../../lib/api';
+import 'leaflet/dist/leaflet.css';
+
+// Toast notification
+const showToast = (message, type = 'success') => {
+  const toastEl = document.createElement('div');
+  toastEl.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all transform ${
+    type === 'success' ? 'bg-green-600 text-white' : type === 'error' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'
+  }`;
+  toastEl.textContent = message;
+  document.body.appendChild(toastEl);
+  setTimeout(() => toastEl.remove(), 3000);
+};
+
+// Custom marker icons
+const createWaypointIcon = (number, color) => {
+  return L.divIcon({
+    html: `<div style="background:${color};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid white;">${number}</div>`,
+    className: 'custom-waypoint-marker',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+};
+
+const createStartEndIcon = (type, color) => {
+  const icon = type === 'start' ? '🚩' : '🏁';
+  return L.divIcon({
+    html: `<div style="background:${color};width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,0.4);border:2px solid white;">${icon}</div>`,
+    className: 'custom-start-end-marker',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+  });
+};
+
+// Map controller
+const MapController = ({ coordinates }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (coordinates?.length > 0) {
+      const bounds = L.latLngBounds(coordinates);
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
+    }
+  }, [coordinates, map]);
+  return null;
+};
 
 const ActivityBooking = () => {
   const navigate = useNavigate();
-  const [selectedActivities, setSelectedActivities] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(null);
+  const { addToCart, isInCart: checkIsInCart } = useCart();
+  
+  // State
+  const [safariRoutes, setSafariRoutes] = useState([]);
+  const [safariSlots, setSafariSlots] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    sortBy: 'popular',
-    priceRange: 'all',
-    duration: 'all',
-    onlyAvailable: false,
-    includeLimited: true,
-    showSafari: true,
-    showEncounters: true
-  });
+  const [participants, setParticipants] = useState(2);
+  const [showRouteDetails, setShowRouteDetails] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationProgress, setAnimationProgress] = useState(0);
+  const [addingToCart, setAddingToCart] = useState(false);
 
-  const activities = [
-  {
-    id: 'jeep-safari',
-    name: 'Jeep Safari',
-    description: 'Explore the dense forests and grasslands of Mudumalai in a 4x4 jeep with experienced naturalist guides. Perfect for wildlife photography and close encounters with animals.',
-    image: "https://images.unsplash.com/photo-1630482414704-2e55a5470e9d",
-    imageAlt: 'Open-top safari jeep with tourists driving through dense forest trail with sunlight filtering through trees',
-    duration: '3 hours',
-    maxCapacity: 6,
-    availableSlots: 12,
-    totalSlots: 20,
-    frequency: 'Daily',
-    ageRestriction: '5+ years',
-    price: 1800,
-    priceRange: { min: 1800, max: 2200 },
-    isPopular: true,
-    discount: 15,
-    highlights: [
-    'Small group experience (max 6 people)',
-    'Expert naturalist guide included',
-    'Access to restricted forest zones',
-    'Wildlife photography opportunities',
-    'Binoculars provided']
+  // Fetch safari routes and slots from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [routesRes, slotsRes] = await Promise.all([
+          api.get('/api/safari-routes?active_only=true'),
+          api.get('/api/safari-slots?active_only=true')
+        ]);
+        setSafariRoutes(routesRes.data || []);
+        setSafariSlots(slotsRes.data || []);
+        
+        // Select first route by default
+        if (routesRes.data?.length > 0) {
+          setSelectedRoute(routesRes.data[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching safari data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setSelectedDate(tomorrow.toISOString().split('T')[0]);
+  }, []);
 
-  },
-  {
-    id: 'bus-safari',
-    name: 'Bus Safari',
-    description: 'Comfortable group safari experience through the main wildlife corridors of Mudumalai. Ideal for families and larger groups wanting to explore the reserve together.',
-    image: "https://images.unsplash.com/photo-1662554875631-7b73fcff7807",
-    imageAlt: 'Large safari bus with open roof filled with tourists observing wildlife in grassland area with mountains in background',
-    duration: '2.5 hours',
-    maxCapacity: 30,
-    availableSlots: 45,
-    totalSlots: 60,
-    frequency: 'Daily',
-    ageRestriction: 'All ages',
-    price: 800,
-    highlights: [
-    'Comfortable seating for all ages',
-    'Covered vehicle with open viewing areas',
-    'Guided commentary throughout',
-    'Multiple wildlife zones covered',
-    'Family-friendly experience']
+  // Get coordinates for selected route
+  const getRouteCoordinates = useCallback(() => {
+    if (!selectedRoute?.coordinates?.length) return [];
+    return selectedRoute.coordinates.map(coord => [coord[1], coord[0]]); // [lat, lng]
+  }, [selectedRoute]);
 
-  },
-  {
-    id: 'elephant-camp',
-    name: 'Elephant Camp Visit',
-    description: 'Interactive experience at the elephant rehabilitation camp. Learn about elephant conservation, watch bathing sessions, and understand their daily care routines.',
-    image: "https://images.unsplash.com/photo-1533631278779-d722ded4c7df",
-    imageAlt: 'Mahout bathing large elephant in river with tourists watching from safe distance, surrounded by tropical vegetation',
-    duration: '2 hours',
-    maxCapacity: 20,
-    availableSlots: 8,
-    totalSlots: 40,
-    frequency: 'Daily',
-    ageRestriction: 'All ages',
-    price: 600,
-    isPopular: true,
-    highlights: [
-    'Watch elephant bathing sessions',
-    'Learn about elephant conservation',
-    'Interact with mahouts',
-    'Educational presentation included',
-    'Photography allowed']
+  // Animate journey
+  const startAnimation = useCallback(() => {
+    if (!selectedRoute || isAnimating) return;
+    setIsAnimating(true);
+    setAnimationProgress(0);
+    
+    const duration = 5000; // 5 seconds
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      setAnimationProgress(progress);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setIsAnimating(false);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  }, [selectedRoute, isAnimating]);
 
-  }];
+  // Add to cart
+  const handleAddToCart = async () => {
+    if (!selectedRoute || !selectedDate || !selectedSlot) {
+      showToast('Please select date and time slot', 'error');
+      return;
+    }
 
+    setAddingToCart(true);
+    try {
+      const cartItem = {
+        item_type: 'activity',
+        item_id: selectedRoute.id,
+        name: `${selectedRoute.short_name || selectedRoute.name}`,
+        quantity: participants,
+        price: selectedRoute.price_per_person,
+        details: {
+          route_name: selectedRoute.name,
+          safari_type: selectedRoute.safari_type,
+          date: selectedDate,
+          time_slot: selectedSlot.slot_time,
+          participants: participants,
+          distance_km: selectedRoute.distance_km,
+          duration_hours: selectedRoute.duration_hours
+        }
+      };
 
-  const availabilityData = {
-    '2026-01-20': { available: 15, total: 20 },
-    '2026-01-21': { available: 8, total: 20 },
-    '2026-01-22': { available: 18, total: 20 },
-    '2026-01-23': { available: 12, total: 20 },
-    '2026-01-24': { available: 5, total: 20 },
-    '2026-01-25': { available: 0, total: 20 },
-    '2026-01-26': { available: 20, total: 20 },
-    '2026-01-27': { available: 14, total: 20 },
-    '2026-01-28': { available: 9, total: 20 },
-    '2026-01-29': { available: 16, total: 20 },
-    '2026-01-30': { available: 3, total: 20 }
-  };
-
-  const timeSlots = [
-  {
-    id: 'slot-1',
-    time: '06:00 AM',
-    duration: '3 hours',
-    meetingPoint: 'Main Gate Reception',
-    capacity: 20,
-    available: 12,
-    price: 1800,
-    includes: ['Guide', 'Binoculars', 'Water']
-  },
-  {
-    id: 'slot-2',
-    time: '09:30 AM',
-    duration: '3 hours',
-    meetingPoint: 'Main Gate Reception',
-    capacity: 20,
-    available: 8,
-    price: 2000,
-    includes: ['Guide', 'Binoculars', 'Water', 'Snacks']
-  },
-  {
-    id: 'slot-3',
-    time: '02:00 PM',
-    duration: '3 hours',
-    meetingPoint: 'Main Gate Reception',
-    capacity: 20,
-    available: 15,
-    price: 1800,
-    includes: ['Guide', 'Binoculars', 'Water']
-  },
-  {
-    id: 'slot-4',
-    time: '04:30 PM',
-    duration: '3 hours',
-    meetingPoint: 'Main Gate Reception',
-    capacity: 20,
-    available: 5,
-    price: 2200,
-    includes: ['Guide', 'Binoculars', 'Water', 'Sunset viewing']
-  }];
-
-
-  const handleActivitySelect = (activity) => {
-    const isSelected = selectedActivities?.some((a) => a?.id === activity?.id);
-    if (isSelected) {
-      setSelectedActivities(selectedActivities?.filter((a) => a?.id !== activity?.id));
-    } else {
-      setSelectedActivities([...selectedActivities, activity]);
+      await addToCart(cartItem);
+      showToast(`${selectedRoute.short_name || selectedRoute.name} added to cart!`, 'success');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      showToast('Failed to add to cart', 'error');
+    } finally {
+      setAddingToCart(false);
     }
   };
 
-  const handleDateSelect = (date) => {
-    setSelectedDate(date);
-    setSelectedSlot(null);
-  };
+  const isInCart = selectedRoute ? checkIsInCart(selectedRoute.id, 'activity') : false;
+  const totalPrice = selectedRoute ? selectedRoute.price_per_person * participants : 0;
 
-  const handleSlotSelect = (slot) => {
-    setSelectedSlot(slot);
-  };
+  // Group routes by type
+  const twoHourRoutes = safariRoutes.filter(r => r.safari_type === '2hr');
+  const oneHourRoutes = safariRoutes.filter(r => r.safari_type === '1hr');
 
-  const handleBookingSubmit = (formData) => {
-    console.log('Booking submitted:', {
-      activities: selectedActivities,
-      date: selectedDate,
-      slot: selectedSlot,
-      ...formData
-    });
-    navigate('/shopping-cart');
-  };
+  // Group slots by period
+  const morningSlots = safariSlots.filter(s => s.slot_period === 'Morning');
+  const afternoonSlots = safariSlots.filter(s => s.slot_period === 'Afternoon');
 
-  const handlePackageSelect = (pkg) => {
-    console.log('Package selected:', pkg);
-    navigate('/shopping-cart');
-  };
-
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const bookingSteps = [
-  { id: 1, label: 'Location', icon: 'MapPin', completed: true },
-  { id: 2, label: 'Accommodation', icon: 'Home', completed: true },
-  { id: 3, label: 'Activities', icon: 'Compass', completed: false },
-  { id: 4, label: 'Review', icon: 'ShoppingCart', completed: false }];
-
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#1E3A1E]">
+        <Header />
+        <div className="pt-[88px] flex items-center justify-center min-h-[60vh]">
+          <Icon name="Loader" size={48} className="animate-spin text-[#5A9A3A]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#1E3A1E]">
       <Header />
-      <BookingProgress currentStep={3} steps={bookingSteps} onStepClick={(stepId) => console.log('Step clicked:', stepId)} />
+      
       <main className="pt-[88px]">
-        <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-          <div className="mb-8 md:mb-10 lg:mb-12">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Icon name="Compass" size={32} strokeWidth={2} color="var(--color-primary)" />
+        <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-6">
+          {/* Page Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-[#5A9A3A]/20 rounded-xl flex items-center justify-center">
+                <Icon name="Compass" size={28} className="text-[#5A9A3A]" />
               </div>
               <div>
-                <h1 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-                  Book Activities
+                <h1 className="font-heading text-3xl md:text-4xl font-bold text-white">
+                  Safari Activities
                 </h1>
-                <p className="text-base md:text-lg text-muted-foreground mt-1">
-                  Choose from exciting wildlife experiences and safari adventures
+                <p className="text-[#B8C4A8]">
+                  Book your wildlife safari adventure • {safariRoutes.length} Routes Available
                 </p>
               </div>
             </div>
-
-            <div className="flex flex-wrap items-center gap-4 mt-6">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Icon name="Calendar" size={18} strokeWidth={2} />
-                <span>Flexible booking dates</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Icon name="Users" size={18} strokeWidth={2} />
-                <span>Group discounts available</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Icon name="Shield" size={18} strokeWidth={2} />
-                <span>Free cancellation up to 24 hours</span>
-              </div>
-            </div>
           </div>
 
-          <div className="lg:hidden mb-6">
-            <Button
-              variant="outline"
-              fullWidth
-              onClick={() => setShowFilters(!showFilters)}
-              iconName="SlidersHorizontal"
-              iconPosition="left">
-
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
-            <div className={`lg:col-span-1 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-              <div className="sticky top-24">
-                <ActivityFilters filters={filters} onFilterChange={handleFilterChange} />
-              </div>
-            </div>
-
-            <div className="lg:col-span-3 space-y-6 md:space-y-8">
-              <div>
-                <h2 className="font-heading text-2xl md:text-3xl font-semibold text-foreground mb-6">
-                  Available Activities
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Route Selection & Booking */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Safari Type Selection */}
+              <div className="bg-[#2A4A2A] rounded-2xl border border-[#5A9A3A]/30 p-5">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Icon name="Route" size={20} className="text-[#5A9A3A]" />
+                  Select Safari Route
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {activities?.map((activity) =>
-                  <ActivityCard
-                    key={activity?.id}
-                    activity={activity}
-                    onSelect={handleActivitySelect}
-                    isSelected={selectedActivities?.some((a) => a?.id === activity?.id)} />
 
+                {/* 2-Hour Safari Routes */}
+                {twoHourRoutes.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-[#FF9E6D] uppercase tracking-wider mb-2">
+                      2-Hour Safari (20km) - ₹800/person
+                    </p>
+                    <div className="space-y-2">
+                      {twoHourRoutes.map(route => (
+                        <button
+                          key={route.id}
+                          onClick={() => {
+                            setSelectedRoute(route);
+                            setShowRouteDetails(true);
+                          }}
+                          className={`w-full p-3 rounded-xl text-left transition-all ${
+                            selectedRoute?.id === route.id
+                              ? 'bg-[#5A9A3A]/30 border-2 border-[#5A9A3A]'
+                              : 'bg-[#1E3A1E] border border-[#5A9A3A]/20 hover:border-[#5A9A3A]/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-3 h-8 rounded-full"
+                              style={{ backgroundColor: route.route_color }}
+                            />
+                            <div className="flex-1">
+                              <p className="font-medium text-white text-sm">{route.short_name || route.name}</p>
+                              <p className="text-xs text-[#B8C4A8]">{route.distance_km} km • {route.duration_hours}hr</p>
+                            </div>
+                            {selectedRoute?.id === route.id && (
+                              <Icon name="Check" size={18} className="text-[#5A9A3A]" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 1-Hour Safari Routes */}
+                {oneHourRoutes.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-[#5A9A3A] uppercase tracking-wider mb-2">
+                      1-Hour Safari - ₹500/person
+                    </p>
+                    <div className="space-y-2">
+                      {oneHourRoutes.map(route => (
+                        <button
+                          key={route.id}
+                          onClick={() => {
+                            setSelectedRoute(route);
+                            setShowRouteDetails(true);
+                          }}
+                          className={`w-full p-3 rounded-xl text-left transition-all ${
+                            selectedRoute?.id === route.id
+                              ? 'bg-[#5A9A3A]/30 border-2 border-[#5A9A3A]'
+                              : 'bg-[#1E3A1E] border border-[#5A9A3A]/20 hover:border-[#5A9A3A]/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-3 h-8 rounded-full"
+                              style={{ backgroundColor: route.route_color }}
+                            />
+                            <div className="flex-1">
+                              <p className="font-medium text-white text-sm">{route.short_name || route.name}</p>
+                              <p className="text-xs text-[#B8C4A8]">{route.distance_km} km • {route.duration_hours}hr</p>
+                            </div>
+                            {selectedRoute?.id === route.id && (
+                              <Icon name="Check" size={18} className="text-[#5A9A3A]" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Date & Time Selection */}
+              <div className="bg-[#2A4A2A] rounded-2xl border border-[#5A9A3A]/30 p-5">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Icon name="Calendar" size={20} className="text-[#5A9A3A]" />
+                  Select Date & Time
+                </h2>
+
+                {/* Date Picker */}
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-[#B8C4A8] uppercase tracking-wider mb-2">
+                    Safari Date
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 bg-[#1E3A1E] border border-[#5A9A3A]/30 rounded-xl text-white focus:outline-none focus:border-[#5A9A3A]"
+                  />
+                </div>
+
+                {/* Time Slots */}
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-[#B8C4A8] uppercase tracking-wider mb-2">
+                    Time Slot
+                  </label>
+                  
+                  {/* Morning Slots */}
+                  {morningSlots.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-[#FF9E6D] mb-2 flex items-center gap-1">
+                        <Icon name="Sun" size={14} /> Morning
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {morningSlots.map(slot => (
+                          <button
+                            key={slot.id}
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                              selectedSlot?.id === slot.id
+                                ? 'bg-[#5A9A3A] text-white'
+                                : 'bg-[#1E3A1E] text-[#B8C4A8] hover:bg-[#5A9A3A]/20'
+                            }`}
+                          >
+                            {slot.slot_time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Afternoon Slots */}
+                  {afternoonSlots.length > 0 && (
+                    <div>
+                      <p className="text-xs text-[#FF9E6D] mb-2 flex items-center gap-1">
+                        <Icon name="Sunset" size={14} /> Afternoon
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {afternoonSlots.map(slot => (
+                          <button
+                            key={slot.id}
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                              selectedSlot?.id === slot.id
+                                ? 'bg-[#5A9A3A] text-white'
+                                : 'bg-[#1E3A1E] text-[#B8C4A8] hover:bg-[#5A9A3A]/20'
+                            }`}
+                          >
+                            {slot.slot_time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
+
+                {/* Participants */}
+                <div>
+                  <label className="block text-xs font-medium text-[#B8C4A8] uppercase tracking-wider mb-2">
+                    Participants
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setParticipants(Math.max(1, participants - 1))}
+                      className="w-10 h-10 bg-[#1E3A1E] rounded-lg flex items-center justify-center text-white hover:bg-[#5A9A3A]/20"
+                    >
+                      <Icon name="Minus" size={18} />
+                    </button>
+                    <span className="text-xl font-bold text-white w-12 text-center">{participants}</span>
+                    <button
+                      onClick={() => setParticipants(Math.min(selectedRoute?.max_capacity || 6, participants + 1))}
+                      className="w-10 h-10 bg-[#1E3A1E] rounded-lg flex items-center justify-center text-white hover:bg-[#5A9A3A]/20"
+                    >
+                      <Icon name="Plus" size={18} />
+                    </button>
+                    <span className="text-sm text-[#B8C4A8]">Max {selectedRoute?.max_capacity || 6}</span>
+                  </div>
+                </div>
               </div>
 
-              {selectedActivities?.length > 0 &&
-              <>
-                  <PackageSuggestions
-                  selectedActivities={selectedActivities}
-                  onPackageSelect={handlePackageSelect} />
+              {/* Price & Book Button */}
+              <div className="bg-gradient-to-br from-[#5A9A3A]/20 to-[#2A4A2A] rounded-2xl border border-[#5A9A3A]/30 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-[#B8C4A8]">Total Price</p>
+                    <p className="text-3xl font-bold text-white">₹{totalPrice.toLocaleString()}</p>
+                    <p className="text-xs text-[#B8C4A8]">
+                      ₹{selectedRoute?.price_per_person || 0} × {participants} {participants === 1 ? 'person' : 'people'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-[#B8C4A8]">{selectedRoute?.safari_type === '2hr' ? '2 Hour' : '1 Hour'} Safari</p>
+                    <p className="text-sm text-[#5A9A3A]">{selectedRoute?.distance_km} km route</p>
+                  </div>
+                </div>
 
+                <button
+                  onClick={handleAddToCart}
+                  disabled={!selectedRoute || !selectedDate || !selectedSlot || addingToCart || isInCart}
+                  className={`w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 transition-all ${
+                    isInCart
+                      ? 'bg-green-600 text-white cursor-default'
+                      : !selectedRoute || !selectedDate || !selectedSlot
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-[#FF9E6D] to-[#FF6B35] text-white hover:shadow-lg hover:shadow-[#FF9E6D]/30'
+                  }`}
+                >
+                  {addingToCart ? (
+                    <>
+                      <Icon name="Loader" size={20} className="animate-spin" />
+                      Adding...
+                    </>
+                  ) : isInCart ? (
+                    <>
+                      <Icon name="Check" size={20} />
+                      Added to Cart
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="ShoppingCart" size={20} />
+                      Add to Cart
+                    </>
+                  )}
+                </button>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-                    <CalendarView
-                    selectedDate={selectedDate}
-                    onDateSelect={handleDateSelect}
-                    availabilityData={availabilityData} />
+                {isInCart && (
+                  <button
+                    onClick={() => navigate('/shopping-cart')}
+                    className="w-full mt-3 py-3 bg-[#5A9A3A] text-white rounded-xl font-medium flex items-center justify-center gap-2"
+                  >
+                    <Icon name="ShoppingBag" size={18} />
+                    View Cart & Checkout
+                  </button>
+                )}
+              </div>
+            </div>
 
+            {/* Right Column - Map & Route Details */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Route Map */}
+              <div className="bg-[#2A4A2A] rounded-2xl border border-[#5A9A3A]/30 overflow-hidden">
+                <div className="p-4 border-b border-[#5A9A3A]/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Icon name="Map" size={20} className="text-[#5A9A3A]" />
+                    <div>
+                      <h3 className="font-semibold text-white">{selectedRoute?.short_name || selectedRoute?.name || 'Select a Route'}</h3>
+                      <p className="text-xs text-[#B8C4A8]">{selectedRoute?.description?.substring(0, 60)}...</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={startAnimation}
+                    disabled={!selectedRoute || isAnimating}
+                    className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all ${
+                      isAnimating
+                        ? 'bg-[#FF9E6D] text-white'
+                        : 'bg-[#5A9A3A] text-white hover:bg-[#4A8A2A]'
+                    }`}
+                  >
+                    <Icon name={isAnimating ? 'Loader' : 'Play'} size={18} className={isAnimating ? 'animate-spin' : ''} />
+                    {isAnimating ? 'Simulating...' : 'Simulate Journey'}
+                  </button>
+                </div>
 
-                    <TimeSlotSelector
-                    selectedActivity={selectedActivities?.[0]}
-                    selectedDate={selectedDate}
-                    selectedSlot={selectedSlot}
-                    onSlotSelect={handleSlotSelect}
-                    availableSlots={timeSlots} />
+                {/* Map Container */}
+                <div className="h-[400px] relative">
+                  {selectedRoute && getRouteCoordinates().length > 0 ? (
+                    <MapContainer
+                      center={getRouteCoordinates()[0]}
+                      zoom={12}
+                      style={{ height: '100%', width: '100%' }}
+                      scrollWheelZoom={true}
+                    >
+                      <TileLayer
+                        attribution='&copy; OpenStreetMap'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <MapController coordinates={getRouteCoordinates()} />
+                      
+                      {/* Route Line */}
+                      <Polyline
+                        positions={getRouteCoordinates()}
+                        pathOptions={{
+                          color: selectedRoute.route_color || '#FFFF00',
+                          weight: 5,
+                          opacity: 0.8,
+                          dashArray: isAnimating ? '10, 10' : null
+                        }}
+                      />
 
+                      {/* Animated progress line */}
+                      {isAnimating && animationProgress > 0 && (
+                        <Polyline
+                          positions={getRouteCoordinates().slice(0, Math.floor(getRouteCoordinates().length * animationProgress) + 1)}
+                          pathOptions={{
+                            color: '#FF6B35',
+                            weight: 7,
+                            opacity: 1
+                          }}
+                        />
+                      )}
+
+                      {/* Start Marker */}
+                      <Marker
+                        position={getRouteCoordinates()[0]}
+                        icon={createStartEndIcon('start', selectedRoute.route_color || '#5A9A3A')}
+                      >
+                        <Popup>
+                          <div className="text-center p-2">
+                            <p className="font-bold">Start Point</p>
+                            <p className="text-sm">Reception</p>
+                          </div>
+                        </Popup>
+                      </Marker>
+
+                      {/* End Marker */}
+                      <Marker
+                        position={getRouteCoordinates()[getRouteCoordinates().length - 1]}
+                        icon={createStartEndIcon('end', selectedRoute.route_color || '#5A9A3A')}
+                      >
+                        <Popup>
+                          <div className="text-center p-2">
+                            <p className="font-bold">End Point</p>
+                            <p className="text-sm">Back to Reception</p>
+                          </div>
+                        </Popup>
+                      </Marker>
+
+                      {/* Current position during animation */}
+                      {isAnimating && (
+                        <Marker
+                          position={getRouteCoordinates()[Math.floor(getRouteCoordinates().length * animationProgress)]}
+                          icon={L.divIcon({
+                            html: '<div style="width:20px;height:20px;background:#FF6B35;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(255,107,53,0.8);"></div>',
+                            className: 'current-position-marker',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10],
+                          })}
+                        />
+                      )}
+                    </MapContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-[#1E3A1E]">
+                      <div className="text-center">
+                        <Icon name="Map" size={48} className="mx-auto mb-4 text-[#5A9A3A]/50" />
+                        <p className="text-[#B8C4A8]">Select a route to view the map</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Animation Progress */}
+                {isAnimating && (
+                  <div className="px-4 py-3 bg-[#1E3A1E] border-t border-[#5A9A3A]/30">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-[#B8C4A8]">Journey Progress</span>
+                      <div className="flex-1 h-2 bg-[#2A4A2A] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-[#5A9A3A] to-[#FF9E6D] transition-all duration-100"
+                          style={{ width: `${animationProgress * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-white">{Math.round(animationProgress * 100)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Route Details & Highlights */}
+              {selectedRoute && (
+                <div className="bg-[#2A4A2A] rounded-2xl border border-[#5A9A3A]/30 p-5">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Icon name="Info" size={20} className="text-[#5A9A3A]" />
+                    Route Details
+                  </h3>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-[#1E3A1E] rounded-xl p-4 text-center">
+                      <Icon name="Route" size={24} className="mx-auto mb-2 text-[#5A9A3A]" />
+                      <p className="text-2xl font-bold text-white">{selectedRoute.distance_km}</p>
+                      <p className="text-xs text-[#B8C4A8]">Kilometers</p>
+                    </div>
+                    <div className="bg-[#1E3A1E] rounded-xl p-4 text-center">
+                      <Icon name="Clock" size={24} className="mx-auto mb-2 text-[#5A9A3A]" />
+                      <p className="text-2xl font-bold text-white">{selectedRoute.duration_hours}</p>
+                      <p className="text-xs text-[#B8C4A8]">Hour(s)</p>
+                    </div>
+                    <div className="bg-[#1E3A1E] rounded-xl p-4 text-center">
+                      <Icon name="Users" size={24} className="mx-auto mb-2 text-[#5A9A3A]" />
+                      <p className="text-2xl font-bold text-white">{selectedRoute.max_capacity}</p>
+                      <p className="text-xs text-[#B8C4A8]">Max Capacity</p>
+                    </div>
+                    <div className="bg-[#1E3A1E] rounded-xl p-4 text-center">
+                      <Icon name="IndianRupee" size={24} className="mx-auto mb-2 text-[#5A9A3A]" />
+                      <p className="text-2xl font-bold text-white">₹{selectedRoute.price_per_person}</p>
+                      <p className="text-xs text-[#B8C4A8]">Per Person</p>
+                    </div>
                   </div>
 
-                  {selectedDate && selectedSlot &&
-                <BookingForm
-                  selectedActivity={selectedActivities?.[0]}
-                  selectedSlot={selectedSlot}
-                  onSubmit={handleBookingSubmit}
-                  maxParticipants={selectedActivities?.[0]?.maxCapacity || 10} />
-
-                }
-                </>
-              }
-
-              {selectedActivities?.length === 0 &&
-              <div className="bg-card rounded-xl border border-border p-8 md:p-12 text-center">
-                  <Icon name="Compass" size={64} className="mx-auto mb-4 text-muted-foreground" strokeWidth={1.5} />
-                  <h3 className="font-heading text-xl md:text-2xl font-semibold text-foreground mb-2">
-                    Select an Activity to Continue
-                  </h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Choose one or more activities above to view available dates, time slots, and complete your booking
-                  </p>
+                  {/* Highlights */}
+                  {selectedRoute.highlights?.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-[#B8C4A8] uppercase tracking-wider mb-3">
+                        Route Highlights
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedRoute.highlights.map((highlight, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-sm text-white">
+                            <Icon name="CheckCircle" size={16} className="text-[#5A9A3A]" />
+                            {highlight}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              }
+              )}
+
+              {/* Other Activities */}
+              <div className="bg-[#2A4A2A] rounded-2xl border border-[#5A9A3A]/30 p-5">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Icon name="Compass" size={20} className="text-[#5A9A3A]" />
+                  Other Wildlife Experiences
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-[#1E3A1E] rounded-xl p-4 border border-[#5A9A3A]/20">
+                    <img 
+                      src="https://images.unsplash.com/photo-1533631278779-d722ded4c7df?w=400"
+                      alt="Elephant Camp"
+                      className="w-full h-32 object-cover rounded-lg mb-3"
+                    />
+                    <h4 className="font-semibold text-white">Elephant Camp Visit</h4>
+                    <p className="text-sm text-[#B8C4A8] mb-2">Watch elephant bathing and feeding sessions</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#5A9A3A] font-bold">₹500/person</span>
+                      <span className="text-xs text-[#B8C4A8]">2 hours</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#1E3A1E] rounded-xl p-4 border border-[#5A9A3A]/20">
+                    <img 
+                      src="https://images.unsplash.com/photo-1444464666168-49d633b86797?w=400"
+                      alt="Bird Watching"
+                      className="w-full h-32 object-cover rounded-lg mb-3"
+                    />
+                    <h4 className="font-semibold text-white">Bird Watching Trail</h4>
+                    <p className="text-sm text-[#B8C4A8] mb-2">Spot exotic birds with expert guides</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#5A9A3A] font-bold">₹400/person</span>
+                      <span className="text-xs text-[#B8C4A8]">3 hours</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </main>
-      <footer className="bg-card border-t border-border mt-12 md:mt-16 lg:mt-20">
-        <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground text-center md:text-left">
-              © {new Date()?.getFullYear()} Mudumalai Tiger Reserve. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-organic">
-                Privacy Policy
-              </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-organic">
-                Terms of Service
-              </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-organic">
-                Contact Us
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>);
-
+    </div>
+  );
 };
 
 export default ActivityBooking;

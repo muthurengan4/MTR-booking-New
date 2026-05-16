@@ -136,7 +136,7 @@ const HeroCarousel = ({ onSearch }) => {
     
     // Navigate based on booking type
     if (bookingType === 'safari') {
-      navigate('/safari-route-explorer');
+      navigate('/activities');
     } else {
       // Scroll to the map section which shows accommodations
       const mapSection = document.getElementById('map-section');

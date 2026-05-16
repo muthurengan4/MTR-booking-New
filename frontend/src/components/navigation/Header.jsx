@@ -18,8 +18,7 @@ const Header = () => {
   const navigationItems = [
     { label: 'Home', path: '/home-landing', icon: 'Home' },
     { label: 'Book Stay', path: '/#booking', icon: 'MapPin', isScroll: true },
-    { label: 'Activities', path: '/activity-booking', icon: 'Compass' },
-    { label: 'Safari Routes', path: '/safari-route-explorer', icon: 'Map' },
+    { label: 'Safari & Activities', path: '/activities', icon: 'Compass' },
     { label: 'Shop', path: '/e-shop', icon: 'ShoppingBag' }
   ];
 
