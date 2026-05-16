@@ -181,6 +181,31 @@ export const integrationSettingsAPI = {
   },
 };
 
+// Special Booking Requests API
+export const specialBookingRequestsAPI = {
+  getAll: async (status = null) => {
+    const params = status ? `?status=${status}` : '';
+    const response = await api.get(`/api/special-booking-requests${params}`);
+    return response.data;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/api/special-booking-requests/${id}`);
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/api/special-booking-requests', data);
+    return response.data;
+  },
+  review: async (id, reviewData) => {
+    const response = await api.put(`/api/special-booking-requests/${id}/review`, reviewData);
+    return response.data;
+  },
+  getStats: async () => {
+    const response = await api.get('/api/special-booking-requests/stats/summary');
+    return response.data;
+  },
+};
+
 // Init Database
 export const initDatabase = async () => {
   const response = await api.post('/api/init-db');

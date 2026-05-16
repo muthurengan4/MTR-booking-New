@@ -178,6 +178,54 @@ class Transaction(Base):
     notes = Column(Text)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+class SpecialBookingRequest(Base):
+    __tablename__ = "special_booking_requests"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    request_number = Column(String(50), unique=True, nullable=False)
+    
+    # Applicant Details
+    full_name = Column(String(255), nullable=False)
+    designation = Column(String(100), nullable=False)
+    department = Column(String(200), nullable=False)
+    official_id_number = Column(String(100), nullable=False)
+    state = Column(String(100), nullable=False)
+    
+    # Stay Details
+    location = Column(String(100), nullable=False)  # Theppakadu or Masinagudi
+    number_of_people = Column(Integer, nullable=False)
+    number_of_rooms = Column(Integer, nullable=False)
+    check_in_date = Column(Date, nullable=False)
+    check_out_date = Column(Date, nullable=False)
+    
+    # Safari Requirement
+    safari_required = Column(Boolean, default=False)
+    
+    # Contact
+    mobile_number = Column(String(20), nullable=False)
+    email = Column(String(255), nullable=False)
+    
+    # Supporting Document
+    document_type = Column(String(50), nullable=False)  # id_proof or official_letter
+    document_url = Column(String(500))  # URL to uploaded document
+    document_filename = Column(String(255))
+    
+    # Pricing
+    room_rate = Column(Numeric(10, 2), default=500)
+    gst_rate = Column(Numeric(5, 2), default=5)  # 5% GST
+    total_room_nights = Column(Integer, default=1)
+    estimated_amount = Column(Numeric(10, 2))
+    
+    # Status
+    status = Column(String(20), default="pending")  # pending, approved, rejected
+    reviewed_by = Column(String(36))  # Admin user ID who reviewed
+    reviewed_at = Column(DateTime)
+    review_notes = Column(Text)
+    rejection_reason = Column(Text)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
 class RoomBlockedDate(Base):
     __tablename__ = "room_blocked_dates"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -430,6 +478,61 @@ class WildlifeZoneResponse(BaseModel):
     description: str
     safety_tips: List[str]
     photo_tips: List[str]
+
+# Special Booking Request Models
+class SpecialBookingRequestCreate(BaseModel):
+    full_name: str
+    designation: str
+    department: str
+    official_id_number: str
+    state: str
+    location: str
+    number_of_people: int
+    number_of_rooms: int
+    check_in_date: str
+    check_out_date: str
+    safari_required: bool = False
+    mobile_number: str
+    email: str
+    document_type: str
+    document_url: Optional[str] = None
+    document_filename: Optional[str] = None
+
+class SpecialBookingRequestResponse(BaseModel):
+    id: str
+    request_number: str
+    full_name: str
+    designation: str
+    department: str
+    official_id_number: str
+    state: str
+    location: str
+    number_of_people: int
+    number_of_rooms: int
+    check_in_date: str
+    check_out_date: str
+    safari_required: bool
+    mobile_number: str
+    email: str
+    document_type: str
+    document_url: Optional[str]
+    document_filename: Optional[str]
+    room_rate: float
+    gst_rate: float
+    total_room_nights: int
+    estimated_amount: float
+    status: str
+    reviewed_by: Optional[str]
+    reviewed_at: Optional[str]
+    review_notes: Optional[str]
+    rejection_reason: Optional[str]
+    created_at: str
+    updated_at: str
+
+class SpecialBookingReviewRequest(BaseModel):
+    status: str  # approved or rejected
+    review_notes: Optional[str] = None
+    rejection_reason: Optional[str] = None
     is_active: bool
 
 class AnalyticsResponse(BaseModel):
@@ -1374,6 +1477,246 @@ def get_wildlife_zones(active_only: bool = False, db: Session = Depends(get_db))
             is_active=z.is_active
         ) for z in zones
     ]
+
+# Special Booking Request Endpoints
+@app.get("/api/special-booking-requests", response_model=List[SpecialBookingRequestResponse])
+def get_special_booking_requests(
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _: dict = Depends(verify_token)
+):
+    """Get all special booking requests (admin only)"""
+    query = db.query(SpecialBookingRequest)
+    if status:
+        query = query.filter(SpecialBookingRequest.status == status)
+    requests = query.order_by(SpecialBookingRequest.created_at.desc()).all()
+    
+    return [
+        SpecialBookingRequestResponse(
+            id=r.id,
+            request_number=r.request_number,
+            full_name=r.full_name,
+            designation=r.designation,
+            department=r.department,
+            official_id_number=r.official_id_number,
+            state=r.state,
+            location=r.location,
+            number_of_people=r.number_of_people,
+            number_of_rooms=r.number_of_rooms,
+            check_in_date=str(r.check_in_date),
+            check_out_date=str(r.check_out_date),
+            safari_required=r.safari_required,
+            mobile_number=r.mobile_number,
+            email=r.email,
+            document_type=r.document_type,
+            document_url=r.document_url,
+            document_filename=r.document_filename,
+            room_rate=float(r.room_rate) if r.room_rate else 500,
+            gst_rate=float(r.gst_rate) if r.gst_rate else 5,
+            total_room_nights=r.total_room_nights or 1,
+            estimated_amount=float(r.estimated_amount) if r.estimated_amount else 0,
+            status=r.status,
+            reviewed_by=r.reviewed_by,
+            reviewed_at=str(r.reviewed_at) if r.reviewed_at else None,
+            review_notes=r.review_notes,
+            rejection_reason=r.rejection_reason,
+            created_at=str(r.created_at),
+            updated_at=str(r.updated_at)
+        ) for r in requests
+    ]
+
+@app.get("/api/special-booking-requests/{request_id}", response_model=SpecialBookingRequestResponse)
+def get_special_booking_request(request_id: str, db: Session = Depends(get_db)):
+    """Get a specific special booking request"""
+    request = db.query(SpecialBookingRequest).filter(SpecialBookingRequest.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    return SpecialBookingRequestResponse(
+        id=request.id,
+        request_number=request.request_number,
+        full_name=request.full_name,
+        designation=request.designation,
+        department=request.department,
+        official_id_number=request.official_id_number,
+        state=request.state,
+        location=request.location,
+        number_of_people=request.number_of_people,
+        number_of_rooms=request.number_of_rooms,
+        check_in_date=str(request.check_in_date),
+        check_out_date=str(request.check_out_date),
+        safari_required=request.safari_required,
+        mobile_number=request.mobile_number,
+        email=request.email,
+        document_type=request.document_type,
+        document_url=request.document_url,
+        document_filename=request.document_filename,
+        room_rate=float(request.room_rate) if request.room_rate else 500,
+        gst_rate=float(request.gst_rate) if request.gst_rate else 5,
+        total_room_nights=request.total_room_nights or 1,
+        estimated_amount=float(request.estimated_amount) if request.estimated_amount else 0,
+        status=request.status,
+        reviewed_by=request.reviewed_by,
+        reviewed_at=str(request.reviewed_at) if request.reviewed_at else None,
+        review_notes=request.review_notes,
+        rejection_reason=request.rejection_reason,
+        created_at=str(request.created_at),
+        updated_at=str(request.updated_at)
+    )
+
+@app.post("/api/special-booking-requests", response_model=SpecialBookingRequestResponse)
+def create_special_booking_request(request: SpecialBookingRequestCreate, db: Session = Depends(get_db)):
+    """Submit a new special booking request (public)"""
+    # Generate request number
+    count = db.query(SpecialBookingRequest).count()
+    request_number = f"SBR-{datetime.now().strftime('%Y%m')}-{str(count + 1).zfill(4)}"
+    
+    # Calculate room nights and estimated amount
+    check_in = datetime.strptime(request.check_in_date, "%Y-%m-%d").date()
+    check_out = datetime.strptime(request.check_out_date, "%Y-%m-%d").date()
+    total_nights = (check_out - check_in).days
+    if total_nights < 1:
+        total_nights = 1
+    
+    room_rate = 500  # ₹500 per room per night
+    gst_rate = 5  # 5% GST
+    base_amount = room_rate * request.number_of_rooms * total_nights
+    gst_amount = base_amount * (gst_rate / 100)
+    estimated_amount = base_amount + gst_amount
+    
+    db_request = SpecialBookingRequest(
+        request_number=request_number,
+        full_name=request.full_name,
+        designation=request.designation,
+        department=request.department,
+        official_id_number=request.official_id_number,
+        state=request.state,
+        location=request.location,
+        number_of_people=request.number_of_people,
+        number_of_rooms=request.number_of_rooms,
+        check_in_date=check_in,
+        check_out_date=check_out,
+        safari_required=request.safari_required,
+        mobile_number=request.mobile_number,
+        email=request.email,
+        document_type=request.document_type,
+        document_url=request.document_url,
+        document_filename=request.document_filename,
+        room_rate=room_rate,
+        gst_rate=gst_rate,
+        total_room_nights=total_nights,
+        estimated_amount=estimated_amount,
+        status="pending"
+    )
+    
+    db.add(db_request)
+    db.commit()
+    db.refresh(db_request)
+    
+    return SpecialBookingRequestResponse(
+        id=db_request.id,
+        request_number=db_request.request_number,
+        full_name=db_request.full_name,
+        designation=db_request.designation,
+        department=db_request.department,
+        official_id_number=db_request.official_id_number,
+        state=db_request.state,
+        location=db_request.location,
+        number_of_people=db_request.number_of_people,
+        number_of_rooms=db_request.number_of_rooms,
+        check_in_date=str(db_request.check_in_date),
+        check_out_date=str(db_request.check_out_date),
+        safari_required=db_request.safari_required,
+        mobile_number=db_request.mobile_number,
+        email=db_request.email,
+        document_type=db_request.document_type,
+        document_url=db_request.document_url,
+        document_filename=db_request.document_filename,
+        room_rate=float(db_request.room_rate),
+        gst_rate=float(db_request.gst_rate),
+        total_room_nights=db_request.total_room_nights,
+        estimated_amount=float(db_request.estimated_amount),
+        status=db_request.status,
+        reviewed_by=None,
+        reviewed_at=None,
+        review_notes=None,
+        rejection_reason=None,
+        created_at=str(db_request.created_at),
+        updated_at=str(db_request.updated_at)
+    )
+
+@app.put("/api/special-booking-requests/{request_id}/review", response_model=SpecialBookingRequestResponse)
+def review_special_booking_request(
+    request_id: str,
+    review: SpecialBookingReviewRequest,
+    db: Session = Depends(get_db),
+    payload: dict = Depends(verify_token)
+):
+    """Approve or reject a special booking request (admin only)"""
+    db_request = db.query(SpecialBookingRequest).filter(SpecialBookingRequest.id == request_id).first()
+    if not db_request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    if review.status not in ["approved", "rejected"]:
+        raise HTTPException(status_code=400, detail="Status must be 'approved' or 'rejected'")
+    
+    db_request.status = review.status
+    db_request.reviewed_by = payload.get("sub")
+    db_request.reviewed_at = datetime.now(timezone.utc)
+    db_request.review_notes = review.review_notes
+    
+    if review.status == "rejected":
+        db_request.rejection_reason = review.rejection_reason
+    
+    db.commit()
+    db.refresh(db_request)
+    
+    return SpecialBookingRequestResponse(
+        id=db_request.id,
+        request_number=db_request.request_number,
+        full_name=db_request.full_name,
+        designation=db_request.designation,
+        department=db_request.department,
+        official_id_number=db_request.official_id_number,
+        state=db_request.state,
+        location=db_request.location,
+        number_of_people=db_request.number_of_people,
+        number_of_rooms=db_request.number_of_rooms,
+        check_in_date=str(db_request.check_in_date),
+        check_out_date=str(db_request.check_out_date),
+        safari_required=db_request.safari_required,
+        mobile_number=db_request.mobile_number,
+        email=db_request.email,
+        document_type=db_request.document_type,
+        document_url=db_request.document_url,
+        document_filename=db_request.document_filename,
+        room_rate=float(db_request.room_rate) if db_request.room_rate else 500,
+        gst_rate=float(db_request.gst_rate) if db_request.gst_rate else 5,
+        total_room_nights=db_request.total_room_nights or 1,
+        estimated_amount=float(db_request.estimated_amount) if db_request.estimated_amount else 0,
+        status=db_request.status,
+        reviewed_by=db_request.reviewed_by,
+        reviewed_at=str(db_request.reviewed_at) if db_request.reviewed_at else None,
+        review_notes=db_request.review_notes,
+        rejection_reason=db_request.rejection_reason,
+        created_at=str(db_request.created_at),
+        updated_at=str(db_request.updated_at)
+    )
+
+@app.get("/api/special-booking-requests/stats/summary")
+def get_special_booking_stats(db: Session = Depends(get_db), _: dict = Depends(verify_token)):
+    """Get summary statistics for special booking requests"""
+    total = db.query(SpecialBookingRequest).count()
+    pending = db.query(SpecialBookingRequest).filter(SpecialBookingRequest.status == "pending").count()
+    approved = db.query(SpecialBookingRequest).filter(SpecialBookingRequest.status == "approved").count()
+    rejected = db.query(SpecialBookingRequest).filter(SpecialBookingRequest.status == "rejected").count()
+    
+    return {
+        "total": total,
+        "pending": pending,
+        "approved": approved,
+        "rejected": rejected
+    }
 
 # Analytics Endpoint
 @app.get("/api/analytics", response_model=AnalyticsResponse)
